@@ -1,24 +1,23 @@
 import type { Metadata } from "next";
 import { AppShell } from "@/components/layout";
-import { QueueDashboardClient, QueuePageNav } from "@/components/queue";
+import { QueueHistoryClient, QueuePageNav } from "@/components/queue";
 import { getQueueDashboardData } from "@/lib/services/queueService";
 
 export const metadata: Metadata = {
-  title: "Extraction Queue",
+  title: "Queue History",
 };
 
-export default async function QueuePage() {
+export default async function QueueHistoryPage() {
   const data = await getQueueDashboardData();
 
   return (
     <AppShell
-      title="Extraction Queue"
-      description="Manage extraction jobs — GitHub Actions for data collection"
+      title="Queue History"
+      description="Completed, failed, and cancelled extraction jobs"
     >
       <div className="space-y-6">
-        <QueuePageNav active="overview" />
-        <QueueDashboardClient
-          stats={data.stats}
+        <QueuePageNav active="history" />
+        <QueueHistoryClient
           initialJobs={data.jobs}
           dataMode={data.dataMode}
           firebaseConfigured={data.firebaseConfigured}

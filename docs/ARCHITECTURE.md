@@ -17,13 +17,14 @@ Internal administration platform for discovering, collecting, organizing, classi
 app/
   (auth)/          # Authentication routes
   (studio)/        # Main application shell routes
-  api/             # Route handlers (import-jobs, review API)
+  api/             # Route handlers (import-jobs, review, queue API)
 
 components/
   layout/          # App shell, sidebar, top nav
   dashboard/       # Dashboard-specific UI
   imports/         # Import Center components
   review/          # Admin Review Center components
+  queue/           # Extraction queue & worker management components
   auth/            # Auth UI placeholders
   ui/              # shadcn/ui primitives
 
@@ -116,22 +117,85 @@ Validation status (`valid` / `duplicate` / `invalid`) remains separate from revi
 
 Auth enforcement is deferred — `getDefaultReviewPermissions()` returns admin permissions for now.
 
+## Phase 6 — Extraction Queue & Worker Management
+
+Infrastructure for future extraction workers — think **GitHub Actions for data collection**. No extraction, scraping, or worker execution in this phase.
+
+### Routes
+
+| Route | Purpose |
+|-------|---------|
+| `/queue` | Queue dashboard with summary cards and job table |
+| `/queue/[jobId]` | Job detail — progress, timeline, extraction records |
+| `/queue/history` | Completed, failed, and cancelled jobs |
+| `/workers` | Worker fleet overview (mock data) |
+| `/workers/logs` | Searchable worker event logs |
+
+### Data Flow (Extraction Queue)
+
+```
+Queue UI (components/queue/)
+    ↓
+API Route (app/api/queue/[jobId])
+    ↓
+Service Layer (queueService, workerService)
+    ↓
+Repositories (extractionJobs, extractionRecords, workerLogs)
+    ↓
+Firestore (extraction_jobs, extraction_records, worker_logs)
+```
+
+### Extraction Job Lifecycle (Architecture)
+
+1. Approved import job generates an **Extraction Job** via `createExtractionJobFromImportJob()`
+2. Valid import records become **Extraction Records** (waiting status)
+3. Future workers poll the queue, claim jobs, and update progress
+4. UI actions (queue, pause, resume, cancel, retry, priority) update status only — no execution
+5. Worker logs stream to `worker_logs` collection (future)
+
+### Job Status Values
+
+`waiting` · `queued` · `running` · `paused` · `completed` · `failed` · `cancelled` · `retrying`
+
+### Priority Levels
+
+`low` · `normal` · `high` · `critical`
+
+### Future Worker Lifecycle
+
+```
+Worker registers → sends heartbeat → polls for queued jobs
+    → claims job → processes extraction records → updates progress
+    → writes worker_logs → marks job completed/failed
+```
+
+Planned worker targets: Mac Studio, MacBook Pro, Ubuntu VPS, Windows Desktop.
+
+### Progress Model
+
+```typescript
+progressPercent = Math.round((processedRecords / estimatedRecords) * 100)
+```
+
+Displayed via animated progress bars in queue table and detail views.
+
 ## Mock Mode
 
 When Firebase is not configured:
 
-- In-memory store via `lib/mock-data/importJobStore.ts` and `lib/mock-data/reviewStore.ts`
-- Seeded demo review data via `lib/mock-data/reviewSeedData.ts` when empty
+- In-memory store via `lib/mock-data/importJobStore.ts`, `reviewStore.ts`, and `queueStore.ts`
+- Seeded demo data via `reviewSeedData.ts` and `queueSeedData.ts` when empty
 - UI displays **Mock Mode** badge and warning banner
 - Application continues to function for development
 
 ## Out of Scope (Future Phases)
 
-- Browser automation and scrapers
+- Browser automation and scrapers (Playwright, Puppeteer, Selenium)
+- Actual queue worker processes and OS schedulers
+- Instagram / Google / website network requests
 - AI classification
-- Queue workers
 - Profile metadata extraction
-- Google Places / website crawlers
+- Chrome extension
 
 ## Roles
 

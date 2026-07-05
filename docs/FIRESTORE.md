@@ -10,6 +10,9 @@ Revit24 Data Studio uses Firestore for import job persistence with a repository/
 | `import_records`   | Normalized profile links/usernames per job           |
 | `approved_records` | Approved snapshots ready for ShiftIt (Phase 5)       |
 | `review_history`   | Moderation audit trail per import record (Phase 5)   |
+| `extraction_jobs`  | Extraction queue jobs from approved imports (Phase 6) |
+| `extraction_records` | Per-profile extraction tasks within a job (Phase 6)  |
+| `worker_logs`      | Extraction worker event logs (Phase 6)               |
 | `logs`             | Application audit logs                               |
 
 ## Planned Collections
@@ -109,6 +112,61 @@ Revit24 Data Studio uses Firestore for import job persistence with a repository/
 | `reason`         | string?   | Action reason / type                 |
 | `notes`          | string?   | Reviewer notes                       |
 
+## extraction_jobs Document
+
+| Field              | Type      | Description                          |
+|--------------------|-----------|--------------------------------------|
+| `id`               | string    | Document ID                          |
+| `importJobId`      | string    | Source import job ID                 |
+| `name`             | string    | Job display name                     |
+| `platform`         | string    | e.g. `instagram`                     |
+| `status`           | string    | See extraction status values         |
+| `priority`         | string    | `low` · `normal` · `high` · `critical` |
+| `createdBy`        | string    | User ID                              |
+| `createdAt`        | timestamp | Creation time                        |
+| `startedAt`        | timestamp?| When worker started                  |
+| `completedAt`      | timestamp?| When job finished                    |
+| `estimatedRecords` | number    | Total records to process             |
+| `processedRecords` | number    | Records processed so far             |
+| `successfulRecords`| number    | Successful extractions               |
+| `failedRecords`    | number    | Failed extractions                   |
+| `duplicateRecords` | number    | Duplicate detections                 |
+| `workerVersion`    | string?   | Worker semver                        |
+| `notes`            | string?   | Optional notes                       |
+
+### Extraction Job Status Values
+
+`waiting` · `queued` · `running` · `paused` · `completed` · `failed` · `cancelled` · `retrying`
+
+## extraction_records Document
+
+| Field            | Type      | Description                          |
+|------------------|-----------|--------------------------------------|
+| `id`             | string    | Document ID                          |
+| `jobId`          | string    | Parent extraction job ID             |
+| `importRecordId` | string    | Source import record ID              |
+| `username`       | string?   | Profile username                     |
+| `profileUrl`     | string?   | Profile URL                          |
+| `status`         | string    | Record processing status             |
+| `attempts`       | number    | Retry attempt count                  |
+| `startedAt`      | timestamp?| Processing start                     |
+| `completedAt`    | timestamp?| Processing end                       |
+| `lastError`      | string?   | Last error message                   |
+| `workerId`       | string?   | Assigned worker ID                   |
+
+## worker_logs Document
+
+| Field        | Type      | Description                          |
+|--------------|-----------|--------------------------------------|
+| `id`         | string    | Document ID                          |
+| `timestamp`  | timestamp | Log timestamp                        |
+| `workerId`   | string    | Worker identifier                    |
+| `workerName` | string    | Worker display name                  |
+| `level`      | string    | `debug` · `info` · `warning` · `error` |
+| `event`      | string    | Event type                           |
+| `jobId`      | string?   | Related extraction job ID            |
+| `message`    | string    | Log message                          |
+
 ## Repository Layer
 
 | Repository                    | File                                      |
@@ -117,6 +175,9 @@ Revit24 Data Studio uses Firestore for import job persistence with a repository/
 | Import records                | `lib/repositories/importRecordsRepository.ts` |
 | Approved records              | `lib/repositories/approvedRecordsRepository.ts` |
 | Review history                | `lib/repositories/reviewHistoryRepository.ts` |
+| Extraction jobs               | `lib/repositories/extractionJobsRepository.ts` |
+| Extraction records            | `lib/repositories/extractionRecordsRepository.ts` |
+| Worker logs                   | `lib/repositories/workerLogsRepository.ts` |
 | Application logs              | `lib/repositories/appLogsRepository.ts`   |
 
 All Firestore access is isolated in repositories. UI and components never call Firestore directly.
@@ -127,10 +188,12 @@ All Firestore access is isolated in repositories. UI and components never call F
 |---------|------|------------------|
 | Import jobs | `lib/services/importJobService.ts` | Bulk input, duplicate detection, job/record creation |
 | Review | `lib/services/reviewService.ts` | Approve, reject, needs edit, history, approved record copy, logging |
+| Queue | `lib/services/queueService.ts` | Extraction job creation, progress, status updates, mock execution |
+| Workers | `lib/services/workerService.ts` | Worker fleet data, worker log filtering |
 
 ## Mock Mode
 
-When Firebase environment variables are missing, the app automatically uses in-memory mock storage (`lib/mock-data/importJobStore.ts`, `lib/mock-data/reviewStore.ts`) and displays a **Mock Mode** badge. Demo review data is seeded via `lib/mock-data/reviewSeedData.ts`.
+When Firebase environment variables are missing, the app automatically uses in-memory mock storage (`importJobStore`, `reviewStore`, `queueStore`, `workerStore`) and displays a **Mock Mode** badge. Demo data is seeded via `reviewSeedData.ts` and `queueSeedData.ts`.
 
 ## Environment Variables
 

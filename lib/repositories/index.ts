@@ -42,6 +42,22 @@ export {
   listRecentReviewHistory,
 } from "./reviewHistoryRepository";
 
+export {
+  createExtractionJob,
+  getExtractionJob,
+  listExtractionJobs,
+  updateExtractionJob,
+  getExtractionJobsByImportJobId,
+} from "./extractionJobsRepository";
+
+export {
+  createExtractionRecords,
+  listExtractionRecords,
+  listAllExtractionRecords,
+} from "./extractionRecordsRepository";
+
+export { createWorkerLog, listWorkerLogs } from "./workerLogsRepository";
+
 export { createAppLog, listRecentAppLogs } from "./appLogsRepository";
 
 export {

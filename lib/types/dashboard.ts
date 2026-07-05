@@ -18,4 +18,7 @@ export interface ActivityItem {
 export interface DashboardData {
   stats: DashboardStat[];
   recentActivity: ActivityItem[];
+  dataMode?: "firestore" | "mock";
+  firebaseConfigured?: boolean;
+  warning?: string;
 }

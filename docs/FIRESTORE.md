@@ -1,37 +1,87 @@
 # Firestore Data Model
 
-Repository layer prepared for the following collections. CRUD operations will be implemented in future phases.
+Revit24 Data Studio uses Firestore for import job persistence with a repository/service architecture.
 
-## Collections
+## Active Collections (Phase 4)
+
+| Collection        | Purpose                                              |
+|-------------------|------------------------------------------------------|
+| `import_jobs`     | Import job documents (Instagram bulk imports, etc.)  |
+| `import_records`  | Normalized profile links/usernames per job           |
+| `logs`            | Application audit logs                               |
+
+## Planned Collections
 
 | Collection   | Purpose                                      |
 |--------------|----------------------------------------------|
-| `imports`    | Raw import batches and source payloads       |
+| `imports`    | Legacy raw import batches                    |
 | `profiles`   | Instagram and social profile records         |
 | `businesses` | Google Places and business listings          |
 | `events`     | Car events and community gatherings          |
 | `users`      | Platform users with role assignments         |
-| `logs`       | Audit trail and system activity              |
 | `jobs`       | Background job queue and processing state    |
 
-## Repository Pattern
+## import_jobs Document
 
-Each collection has a dedicated repository extending `BaseRepository<T>`:
+| Field              | Type     | Description                    |
+|--------------------|----------|--------------------------------|
+| `id`               | string   | Document ID                    |
+| `name`             | string   | Job display name               |
+| `type`             | string   | e.g. `instagram_profile_links` |
+| `source`           | string   | e.g. `instagram`               |
+| `status`           | string   | See status values below        |
+| `createdBy`        | string   | User ID (currently `system-dev`) |
+| `createdAt`        | timestamp| Creation time                  |
+| `updatedAt`        | timestamp| Last update time               |
+| `totalRecords`     | number   | Total input lines              |
+| `validRecords`     | number   | Valid profiles                 |
+| `duplicateRecords` | number   | Duplicate profiles             |
+| `invalidRecords`   | number   | Invalid input rows             |
+| `notes`            | string?  | Optional notes                 |
+| `metadata`         | object?  | Extensible metadata            |
 
-```typescript
-// lib/repositories/imports.repository.ts
-export const importsRepository = new ImportsRepository();
-```
+### Job Status Values
 
-Repositories expose a consistent interface:
+`draft` · `queued` · `running` · `completed` · `failed` · `cancelled` · `pending_review`
 
-- `findById(id)`
-- `findAll(constraints?)`
-- `create(data)`
-- `update(id, data)`
-- `delete(id)`
+## import_records Document
 
-All methods throw "not implemented" until Phase 2+.
+| Field           | Type     | Description                         |
+|-----------------|----------|-------------------------------------|
+| `id`            | string   | Document ID                         |
+| `jobId`         | string   | Parent import job ID                |
+| `originalInput` | string   | Raw pasted value                    |
+| `username`      | string?  | Normalized Instagram username       |
+| `profileUrl`    | string?  | Normalized profile URL              |
+| `status`        | string   | `valid` · `duplicate` · `invalid`   |
+| `error`         | string?  | Validation error message            |
+| `duplicateOf`   | string?  | Existing record ID if duplicate     |
+| `createdAt`     | timestamp| Creation time                       |
+| `updatedAt`     | timestamp| Last update time                    |
+
+## Repository Layer
+
+| Repository                    | File                                      |
+|-------------------------------|-------------------------------------------|
+| Import jobs                   | `lib/repositories/importJobsRepository.ts` |
+| Import records                | `lib/repositories/importRecordsRepository.ts` |
+| Application logs              | `lib/repositories/appLogsRepository.ts`   |
+
+All Firestore access is isolated in repositories. UI and components never call Firestore directly.
+
+## Service Layer
+
+`lib/services/importJobService.ts` handles:
+
+- Bulk input validation orchestration
+- Duplicate detection against existing records
+- Job and record creation
+- History and dashboard statistics
+- Mock fallback when Firebase is not configured
+
+## Mock Mode
+
+When Firebase environment variables are missing, the app automatically uses in-memory mock storage (`lib/mock-data/importJobStore.ts`) and displays a **Mock Mode** badge.
 
 ## Environment Variables
 

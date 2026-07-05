@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { createInstagramProfileImportJobFromText } from "@/lib/services/instagramProfileImportService";
+import { getErrorMessage } from "@/lib/errors/app-errors";
+import { createImportJobFromText } from "@/lib/services/importJobService";
 import { isFirebaseConfigured } from "@/lib/firebase/config";
 
 export async function GET() {
@@ -19,16 +20,13 @@ export async function POST(request: Request) {
       );
     }
 
-    const result = await createInstagramProfileImportJobFromText(
-      body.text,
-      body.name,
-    );
+    const result = await createImportJobFromText(body.text, body.name);
 
     return NextResponse.json(result, { status: 201 });
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Failed to create import job.";
-
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json(
+      { error: getErrorMessage(error, "Failed to create import job.") },
+      { status: 500 },
+    );
   }
 }

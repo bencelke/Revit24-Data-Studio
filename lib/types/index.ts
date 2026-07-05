@@ -34,26 +34,41 @@ export type {
   ImportSortField,
   ImportSortDirection,
   ImportTypeAvailability,
+} from "./imports";
+
+export type {
+  ImportJobStatus,
+  ImportRecordStatus,
+  ImportDataMode,
+  ImportJobDocument,
+  ImportRecordDocument,
+  ImportJobWithRecords,
+  CreateImportJobResult,
+  ImportHistoryData,
+  ImportJobDashboardStats,
+  AppLogEntry,
   InstagramProfileInput,
-  InstagramProfileInputStatus,
   InstagramProfileInputSummary,
   InstagramProfileBulkParseResult,
-  InstagramProfileImportRecord,
-  InstagramProfileImportJob,
   DiscoveryTarget,
   DiscoveryPlatform,
   DiscoveryQueryType,
   DiscoveryTargetStatus,
-  ImportDataMode,
+  InstagramProfileImportJob,
+  InstagramProfileImportRecord,
   CreateInstagramImportJobResult,
-  ImportHistoryData,
-} from "./imports";
+} from "./import-jobs";
 
 export {
   IMPORT_STATUSES,
   IMPORT_TYPES,
   IMPORT_SOURCES,
+} from "./imports";
+
+export {
+  IMPORT_JOB_STATUSES,
+  IMPORT_RECORD_STATUSES,
   DISCOVERY_PLATFORMS,
   DISCOVERY_QUERY_TYPES,
   DISCOVERY_TARGET_STATUSES,
-} from "./imports";
+} from "./import-jobs";

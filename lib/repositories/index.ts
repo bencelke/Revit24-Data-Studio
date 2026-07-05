@@ -8,13 +8,31 @@ export { usersRepository } from "./users.repository";
 export { logsRepository } from "./logs.repository";
 export { jobsRepository } from "./jobs.repository";
 export type { ImportRepository } from "./importRepository";
+
 export {
-  createInstagramProfileImportJob,
+  createImportJob,
+  updateImportJob,
+  deleteImportJob,
+  getImportJob,
+  listImportJobs,
+} from "./importJobsRepository";
+
+export {
+  createImportRecords,
+  listImportRecords,
+  updateImportRecord,
+  deleteImportRecord,
+  countImportRecords,
   findExistingRecordsByUsernames,
-  getInstagramProfileImportJob,
+  deleteImportRecordsByJobId,
+} from "./importRecordsRepository";
+
+export { createAppLog, listRecentAppLogs } from "./appLogsRepository";
+
+export {
+  getFirestoreDb,
+  isFirestoreAvailable,
   isFirebaseConfigured,
-  listInstagramProfileImportJobs,
-  listInstagramProfileImportRecords,
-  updateInstagramProfileImportJobStatus,
-  FirestoreNotConfiguredError,
-} from "./instagramProfileImportRepository";
+} from "./firestore-client";
+
+export { FirestoreNotConfiguredError } from "@/lib/errors/app-errors";

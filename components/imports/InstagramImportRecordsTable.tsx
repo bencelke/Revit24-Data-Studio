@@ -9,11 +9,11 @@ import {
 } from "@/components/ui/table";
 import { EmptyState } from "./EmptyState";
 import { formatImportDate } from "@/lib/services/importService";
-import type { InstagramProfileImportRecord } from "@/lib/types/instagram-imports";
+import type { ImportRecordDocument } from "@/lib/types/import-jobs";
 import { cn } from "@/lib/utils";
 
 interface InstagramImportRecordsTableProps {
-  records: InstagramProfileImportRecord[];
+  records: ImportRecordDocument[];
 }
 
 const statusStyles = {

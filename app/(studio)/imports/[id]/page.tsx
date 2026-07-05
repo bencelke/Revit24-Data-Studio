@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/card";
 import { isFirebaseConfigured } from "@/lib/firebase/config";
 import { getImportJobById } from "@/lib/services/importService";
-import { getInstagramProfileImportJobWithRecords } from "@/lib/services/instagramProfileImportService";
+import { getImportJobWithRecords } from "@/lib/services/importJobService";
 
 interface ImportDetailPageProps {
   params: Promise<{ id: string }>;
@@ -35,7 +35,7 @@ export async function generateMetadata({
   params,
 }: ImportDetailPageProps): Promise<Metadata> {
   const { id } = await params;
-  const instagramJob = await getInstagramProfileImportJobWithRecords(id);
+  const instagramJob = await getImportJobWithRecords(id);
   const mockJob = instagramJob ? null : getImportJobById(id);
 
   return {
@@ -48,7 +48,7 @@ export default async function ImportDetailPage({
 }: ImportDetailPageProps) {
   const { id } = await params;
   const firebaseConfigured = isFirebaseConfigured();
-  const instagramJob = await getInstagramProfileImportJobWithRecords(id);
+  const instagramJob = await getImportJobWithRecords(id);
 
   if (instagramJob) {
     return (
@@ -115,9 +115,7 @@ export default async function ImportDetailPage({
           <div className="space-y-4 lg:col-span-2">
             <Card className="border-border bg-card shadow-none">
               <CardHeader>
-                <CardTitle className="text-base font-semibold">
-                  Logs
-                </CardTitle>
+                <CardTitle className="text-base font-semibold">Logs</CardTitle>
                 <CardDescription>
                   Processing logs will appear here in a future phase
                 </CardDescription>
@@ -134,9 +132,7 @@ export default async function ImportDetailPage({
 
             <Card className="border-border bg-card shadow-none">
               <CardHeader>
-                <CardTitle className="text-base font-semibold">
-                  Errors
-                </CardTitle>
+                <CardTitle className="text-base font-semibold">Errors</CardTitle>
                 <CardDescription>
                   Failed record details and error traces
                 </CardDescription>
@@ -157,9 +153,7 @@ export default async function ImportDetailPage({
 
             <Card className="border-border bg-card shadow-none">
               <CardHeader>
-                <CardTitle className="text-base font-semibold">
-                  Preview
-                </CardTitle>
+                <CardTitle className="text-base font-semibold">Preview</CardTitle>
                 <CardDescription>
                   Sample of imported records before ShiftIt export
                 </CardDescription>

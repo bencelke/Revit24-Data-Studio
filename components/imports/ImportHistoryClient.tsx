@@ -9,7 +9,8 @@ import { ImportTable } from "./ImportTable";
 import { DataModeBadge, FirestoreStatusBanner } from "./DataModeBadge";
 import { applyImportJobFilters } from "@/lib/services/importService";
 import type { ImportFilterParams, ImportJob, ImportSortField } from "@/lib/types/imports";
-import type { ImportDataMode } from "@/lib/types/instagram-imports";
+import type { ImportDataMode } from "@/lib/types/import-jobs";
+import { MOCK_MODE_WARNING } from "@/lib/errors/app-errors";
 
 interface ImportHistoryClientProps {
   initialJobs: ImportJob[];
@@ -61,8 +62,8 @@ export function ImportHistoryClient({
       {!firebaseConfigured ? (
         <FirestoreStatusBanner
           variant="warning"
-          title="Firestore Not Configured"
-          description="Showing mock import history. Configure Firebase environment variables in .env.local to persist and view live import jobs."
+          title="Mock Mode"
+          description={MOCK_MODE_WARNING}
         />
       ) : null}
 

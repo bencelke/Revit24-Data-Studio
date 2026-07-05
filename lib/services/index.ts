@@ -12,16 +12,25 @@ export {
   getRecentImportJobs,
 } from "./importService";
 export {
-  createInstagramProfileImportJob,
+  createImportJobFromBulkInput,
+  createImportJobFromText,
+  getImportHistoryData,
+  getImportJobDashboardStats,
+  getImportJobWithRecords,
+  getRecentAppLogs,
+  isImportFirestoreAvailable,
+  listImportJobsForHistory,
+  mapImportJobDocumentToLegacyJob,
+  updateImportJobStatus,
+} from "./importJobService";
+export {
   createInstagramProfileImportJobFromText,
   getDiscoveryPlatformLabel,
   getDiscoveryQueryTypeLabel,
   getDiscoveryStatusLabel,
   getDiscoveryTargets,
-  getImportHistoryData,
-  getInstagramProfileImportJobById,
   getInstagramProfileImportJobWithRecords,
-  getInstagramProfileImportJobs,
   isInstagramImportFirestoreAvailable,
   mapInstagramJobToImportJob,
+  parseAndPrepareBulkInput,
 } from "./instagramProfileImportService";

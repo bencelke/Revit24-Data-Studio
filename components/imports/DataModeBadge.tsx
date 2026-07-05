@@ -1,6 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import type { ImportDataMode } from "@/lib/types/instagram-imports";
+import type { ImportDataMode } from "@/lib/types/import-jobs";
+import { MOCK_MODE_WARNING } from "@/lib/errors/app-errors";
 
 interface DataModeBadgeProps {
   dataMode: ImportDataMode;
@@ -25,7 +26,7 @@ export function DataModeBadge({
         className,
       )}
     >
-      {isLive ? "Live Firestore Data" : "Mock Data Mode"}
+      {isLive ? "Live Firestore Data" : "Mock Mode"}
     </Badge>
   );
 }
@@ -33,7 +34,8 @@ export function DataModeBadge({
 interface FirestoreStatusBannerProps {
   variant: "success" | "warning" | "error" | "info";
   title: string;
-  description: string;
+  description?: string;
+  className?: string;
 }
 
 const bannerStyles = {
@@ -47,11 +49,24 @@ export function FirestoreStatusBanner({
   variant,
   title,
   description,
+  className,
 }: FirestoreStatusBannerProps) {
   return (
-    <div className={cn("rounded-md border p-4", bannerStyles[variant])}>
+    <div className={cn("rounded-md border p-4", bannerStyles[variant], className)}>
       <p className="text-sm font-medium text-foreground">{title}</p>
-      <p className="mt-1 text-sm text-muted-foreground">{description}</p>
+      {description ? (
+        <p className="mt-1 text-sm text-muted-foreground">{description}</p>
+      ) : null}
     </div>
+  );
+}
+
+export function MockModeBanner() {
+  return (
+    <FirestoreStatusBanner
+      variant="warning"
+      title="Mock Mode"
+      description={MOCK_MODE_WARNING}
+    />
   );
 }

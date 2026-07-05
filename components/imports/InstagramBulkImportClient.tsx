@@ -14,7 +14,8 @@ import { InstagramPreviewTable } from "./InstagramPreviewTable";
 import { ImportPreviewSummary } from "./ImportPreviewSummary";
 import { FirestoreStatusBanner } from "./DataModeBadge";
 import { parseInstagramBulkInput } from "@/lib/validation/instagramProfileInput";
-import { isInstagramImportFirestoreAvailable } from "@/lib/services/instagramProfileImportService";
+import { MOCK_MODE_WARNING, getErrorMessage } from "@/lib/errors/app-errors";
+import { isImportFirestoreAvailable } from "@/lib/services/importJobService";
 import type { InstagramProfileBulkParseResult } from "@/lib/types/instagram-imports";
 
 export function InstagramBulkImportClient() {
@@ -27,7 +28,7 @@ export function InstagramBulkImportClient() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [warningMessage, setWarningMessage] = useState<string | null>(null);
 
-  const firebaseConfigured = isInstagramImportFirestoreAvailable();
+  const firebaseConfigured = isImportFirestoreAvailable();
 
   function handlePreview() {
     setParseResult(parseInstagramBulkInput(input));
@@ -75,11 +76,7 @@ export function InstagramBulkImportClient() {
 
       throw new Error("Import job response was missing job data.");
     } catch (createError) {
-      setError(
-        createError instanceof Error
-          ? createError.message
-          : "Failed to create import job.",
-      );
+      setError(getErrorMessage(createError, "Failed to create import job."));
     } finally {
       setIsCreating(false);
     }
@@ -91,8 +88,8 @@ export function InstagramBulkImportClient() {
         {!firebaseConfigured ? (
           <FirestoreStatusBanner
             variant="warning"
-            title="Firestore Not Configured"
-            description="Import jobs will be saved locally only and will not persist after restart. Add Firebase credentials to .env.local for Firestore persistence."
+            title="Mock Mode"
+            description={MOCK_MODE_WARNING}
           />
         ) : (
           <FirestoreStatusBanner

@@ -15,11 +15,11 @@ import {
 import { formatImportDate } from "@/lib/services/importService";
 import type {
   ImportDataMode,
-  InstagramProfileImportJob,
-} from "@/lib/types/instagram-imports";
+  ImportJobWithRecords,
+} from "@/lib/types/import-jobs";
 
 interface InstagramImportDetailViewProps {
-  job: InstagramProfileImportJob;
+  job: ImportJobWithRecords;
   dataMode: ImportDataMode;
   firebaseConfigured: boolean;
 }
@@ -30,6 +30,8 @@ export function InstagramImportDetailView({
   firebaseConfigured,
 }: InstagramImportDetailViewProps) {
   const records = job.records ?? [];
+  const errorRecords = records.filter((record) => record.status === "invalid");
+  const duplicateRecords = records.filter((record) => record.status === "duplicate");
 
   return (
     <div className="space-y-6">
@@ -95,6 +97,44 @@ export function InstagramImportDetailView({
         />
       </div>
 
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card className="border-border bg-card shadow-none">
+          <CardHeader>
+            <CardTitle className="text-base font-semibold">Summary</CardTitle>
+            <CardDescription>Validation statistics for this job</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm text-muted-foreground">
+            <p>Status: {job.status}</p>
+            <p>Valid records: {job.validRecords}</p>
+            <p>Duplicates: {duplicateRecords.length}</p>
+            <p>Errors: {errorRecords.length}</p>
+          </CardContent>
+        </Card>
+
+        <Card className="border-border bg-card shadow-none">
+          <CardHeader>
+            <CardTitle className="text-base font-semibold">Errors</CardTitle>
+            <CardDescription>Invalid rows from bulk input</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {errorRecords.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No invalid rows.</p>
+            ) : (
+              <ul className="space-y-1 text-sm text-muted-foreground">
+                {errorRecords.slice(0, 5).map((record) => (
+                  <li key={record.id}>
+                    {record.originalInput.trim() || "(empty)"}: {record.error}
+                  </li>
+                ))}
+                {errorRecords.length > 5 ? (
+                  <li>+ {errorRecords.length - 5} more</li>
+                ) : null}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
       <Card className="border-border bg-card shadow-none">
         <CardHeader>
           <CardTitle className="text-base font-semibold">
@@ -109,17 +149,6 @@ export function InstagramImportDetailView({
           <InstagramImportRecordsTable records={records} />
         </CardContent>
       </Card>
-
-      {job.notes ? (
-        <Card className="border-border bg-card shadow-none">
-          <CardHeader>
-            <CardTitle className="text-base font-semibold">Notes</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">{job.notes}</p>
-          </CardContent>
-        </Card>
-      ) : null}
     </div>
   );
 }

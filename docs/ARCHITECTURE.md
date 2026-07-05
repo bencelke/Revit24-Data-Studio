@@ -8,7 +8,7 @@ Internal administration platform for discovering, collecting, organizing, classi
 - **TypeScript** (strict)
 - **Tailwind CSS** + **shadcn/ui**
 - **Firebase Authentication** (architecture prepared)
-- **Firestore** (repository layer prepared)
+- **Firestore** (import jobs & records persisted)
 - **Vercel** deployment target
 
 ## Directory Structure
@@ -17,40 +17,66 @@ Internal administration platform for discovering, collecting, organizing, classi
 app/
   (auth)/          # Authentication routes
   (studio)/        # Main application shell routes
-  api/             # Route handlers
+  api/             # Route handlers (import-jobs API)
 
 components/
   layout/          # App shell, sidebar, top nav
   dashboard/       # Dashboard-specific UI
+  imports/         # Import Center components
   auth/            # Auth UI placeholders
   ui/              # shadcn/ui primitives
 
 lib/
-  firebase/        # Firebase initialization & auth contracts
-  repositories/    # Firestore repository layer
-  services/        # Application services (mock data in Phase 1)
-  validation/      # Input validation schemas
+  firebase/        # Firebase initialization
+  repositories/    # Firestore repository layer (no UI access)
+  services/        # Business logic layer
+  validation/      # Pure validation functions
   types/           # Shared TypeScript types
-  utils/           # Utilities (cn, etc.)
+  errors/          # Centralized error handling
+  mock-data/       # Mock fallback stores
+  utils/           # Utilities
 ```
 
-## Phase 1 Scope
+## Data Flow (Import Center)
 
-This phase establishes the SaaS foundation only:
+```
+UI Component
+    ↓
+API Route / Server Component
+    ↓
+Service Layer (importJobService)
+    ↓
+Repository Layer (importJobsRepository, importRecordsRepository)
+    ↓
+Firestore (import_jobs, import_records)
+```
 
-- Admin dashboard layout with sidebar and top navigation
-- Dashboard with mock statistics and recent activity
-- Placeholder pages for Imports, Review, Queue, and Settings
-- Firebase and Firestore architecture (no CRUD or auth logic)
-- Repository contracts for future collections
+Validation (`lib/validation/instagramProfileInput.ts`) remains pure — no network calls.
+
+## Phase 4 — Firestore Persistence
+
+- Instagram bulk import jobs persisted to `import_jobs`
+- Normalized profile records persisted to `import_records`
+- Duplicate detection queries existing records by username
+- Dashboard statistics loaded from Firestore when configured
+- Application events logged to `logs` collection
+- Mock Mode fallback when Firebase env vars are missing
+
+## Mock Mode
+
+When Firebase is not configured:
+
+- In-memory store via `lib/mock-data/importJobStore.ts`
+- UI displays **Mock Mode** badge and warning banner
+- Application continues to function for development
 
 ## Out of Scope (Future Phases)
 
 - Browser automation and scrapers
 - AI classification
-- Import logic and CSV processing
 - Queue workers
-- Google Maps integration
+- Profile metadata extraction
+- Google Places / website crawlers
 
 ## Roles
 

@@ -74,6 +74,6 @@ export function getNormalizationStoreStats() {
     highConfidenceMatches: mockNormalizationStore
       .listRecords()
       .flatMap((r) => mockNormalizationStore.listMatchesForRecord(r.id))
-      .filter((m) => m.confidenceLevel === "high").length,
+      .filter((m) => m.confidence === "high").length,
   };
 }

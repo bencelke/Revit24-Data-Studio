@@ -8,7 +8,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import type { EntityMatchDocument } from "@/lib/types/normalization";
+import type { EntityMatchDocument } from "@/lib/types/duplicates";
 import { getMatchLevelLabel } from "@/lib/services/entityMatchingService";
 import { cn } from "@/lib/utils";
 
@@ -16,7 +16,7 @@ interface PotentialMatchesProps {
   matches: EntityMatchDocument[];
 }
 
-const levelStyles: Record<EntityMatchDocument["confidenceLevel"], string> = {
+const levelStyles: Record<EntityMatchDocument["confidence"], string> = {
   high: "border-red-500/30 bg-red-500/10 text-red-400",
   medium: "border-amber-500/30 bg-amber-500/10 text-amber-400",
   low: "border-border text-muted-foreground",
@@ -44,21 +44,29 @@ export function PotentialMatches({ matches }: PotentialMatchesProps) {
                 <div>
                   <p className="font-medium">{match.matchedDisplayName}</p>
                   <p className="text-xs text-muted-foreground">
-                    Matched on: {match.matchFields.join(", ")}
+                    Matched on: {match.reasons.join(", ")}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
                   <Badge
                     variant="outline"
-                    className={cn("font-medium", levelStyles[match.confidenceLevel])}
+                    className={cn("font-medium", levelStyles[match.confidence])}
                   >
-                    {getMatchLevelLabel(match.confidenceLevel)} ({match.confidenceScore})
+                    {getMatchLevelLabel(match.confidence)} ({match.confidenceScore})
                   </Badge>
                   <Button
                     variant="ghost"
                     size="sm"
                     nativeButton={false}
-                    render={<Link href={`/entities/${match.matchedRecordId}`} />}
+                    render={<Link href={`/duplicates/${match.id}`} />}
+                  >
+                    Resolve
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    nativeButton={false}
+                    render={<Link href={`/entities/${match.recordBId}`} />}
                   >
                     View
                   </Button>

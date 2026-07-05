@@ -274,3 +274,34 @@ export {
   SOCIAL_PLATFORMS,
   AUTOMOTIVE_TAGS,
 } from "./normalization";
+
+export {
+  ENTITY_MATCH_STATUSES,
+  MATCH_RESOLUTIONS,
+  MATCH_REASONS,
+  MATCH_TYPES,
+  MERGE_FIELD_KEYS,
+  MERGE_ACTIONS,
+} from "./duplicates";
+
+export type {
+  EntityMatchStatus,
+  MatchResolution,
+  MatchReason,
+  MatchType,
+  MergeFieldKey,
+  MergeFieldSelection,
+  MergeFieldSelections,
+  MergeAction,
+  MergeHistoryDocument,
+  CreateMergeHistoryInput,
+  DuplicateDashboardStats,
+  DuplicateMatchView,
+  DuplicateListResult,
+  DuplicateFilterParams,
+  DuplicatesDashboardData,
+  DuplicateMatchDetailData,
+  MergePreviewData,
+  CreateNormalizedRecordInputPreview,
+  ResolveMatchPayload,
+} from "./duplicates";

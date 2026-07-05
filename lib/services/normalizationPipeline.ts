@@ -33,15 +33,15 @@ import type {
   CreateNormalizationLogInput,
   CreateNormalizedRecordInput,
   EntityDetailData,
-  EntityMatchDocument,
-  EntitiesDashboardStats,
-  EntitiesListData,
   NormalizationLogDocument,
   NormalizationResult,
   NormalizedRecordDocument,
   PipelineDashboardStats,
   RawExtractedMetadata,
+  EntitiesDashboardStats,
+  EntitiesListData,
 } from "@/lib/types/normalization";
+import type { EntityMatchDocument } from "@/lib/types/duplicates";
 import { isFirebaseConfigured } from "@/lib/firebase/config";
 import { MOCK_MODE_WARNING } from "@/lib/errors/app-errors";
 import { listInstagramProfiles } from "@/lib/repositories/instagramProfilesRepository";
@@ -260,7 +260,7 @@ async function countHighConfidenceMatches(
       let count = 0;
       for (const record of records) {
         const matches = await fetchEntityMatches(record.id);
-        count += matches.filter((match) => match.confidenceLevel === "high").length;
+        count += matches.filter((match) => match.confidence === "high").length;
       }
       return count;
     } catch (error) {
@@ -272,7 +272,7 @@ async function countHighConfidenceMatches(
 
   return mockNormalizationStore
     .listAllMatches()
-    .filter((match) => match.confidenceLevel === "high").length;
+    .filter((match) => match.confidence === "high").length;
 }
 
 async function computeStats(

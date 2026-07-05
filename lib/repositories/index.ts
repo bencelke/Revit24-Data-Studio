@@ -83,12 +83,22 @@ export {
   upsertNormalizedRecord,
   listNormalizedRecords,
   getNormalizedRecord,
+  updateNormalizedRecord,
 } from "./normalizedRecordsRepository";
 
 export {
   createEntityMatch,
+  getEntityMatch,
+  listEntityMatches,
   listEntityMatchesByRecordId,
+  updateEntityMatch,
 } from "./entityMatchesRepository";
+
+export {
+  createMergeHistory,
+  listMergeHistoryByMatchId,
+  listMergeHistory,
+} from "./mergeHistoryRepository";
 
 export {
   createNormalizationLog,

@@ -27,6 +27,8 @@ export const NORMALIZED_RECORD_STATUSES = [
   "rejected",
   "needs_edit",
   "archived",
+  "merged",
+  "duplicate",
 ] as const;
 
 export type NormalizedRecordStatus = (typeof NORMALIZED_RECORD_STATUSES)[number];
@@ -146,18 +148,7 @@ export interface NormalizedRecordDocument {
 
 export type CreateNormalizedRecordInput = Omit<NormalizedRecordDocument, "id">;
 
-export interface EntityMatchDocument {
-  id: string;
-  normalizedRecordId: string;
-  matchedRecordId: string;
-  matchedDisplayName: string;
-  matchFields: string[];
-  confidenceLevel: MatchConfidenceLevel;
-  confidenceScore: number;
-  createdAt: string;
-}
-
-export type CreateEntityMatchInput = Omit<EntityMatchDocument, "id">;
+export type { EntityMatchDocument, CreateEntityMatchInput } from "./duplicates";
 
 export interface NormalizationLogDocument {
   id: string;
@@ -172,7 +163,7 @@ export type CreateNormalizationLogInput = Omit<NormalizationLogDocument, "id">;
 
 export interface NormalizationResult {
   record: NormalizedRecordDocument;
-  matches: EntityMatchDocument[];
+  matches: import("./duplicates").EntityMatchDocument[];
 }
 
 export interface EntitiesDashboardStats {
@@ -192,7 +183,7 @@ export interface EntitiesListData {
 
 export interface EntityDetailData {
   record: NormalizedRecordDocument;
-  matches: EntityMatchDocument[];
+  matches: import("./duplicates").EntityMatchDocument[];
   logs: NormalizationLogDocument[];
   dataMode: "firestore" | "mock";
   firebaseConfigured: boolean;

@@ -4,6 +4,7 @@ import {
   getDoc,
   getDocs,
   setDoc,
+  updateDoc,
   type DocumentData,
 } from "firebase/firestore";
 import { FIRESTORE_COLLECTIONS } from "@/lib/firebase/config";
@@ -114,4 +115,18 @@ export async function listNormalizedRecords(): Promise<NormalizedRecordDocument[
   return snapshot.docs
     .map((recordDoc) => mapRecordDoc(recordDoc.id, recordDoc.data()))
     .sort((a, b) => new Date(b.normalizedAt).getTime() - new Date(a.normalizedAt).getTime());
+}
+
+export async function updateNormalizedRecord(
+  id: string,
+  data: Partial<CreateNormalizedRecordInput>,
+): Promise<NormalizedRecordDocument | null> {
+  const db = getFirestoreDb();
+  const existing = await getNormalizedRecord(id);
+  if (!existing) return null;
+
+  const merged = { ...existing, ...data, id };
+  const payload = buildPayload(merged);
+  await updateDoc(doc(db, FIRESTORE_COLLECTIONS.normalized_records, id), payload);
+  return mapRecordDoc(id, payload);
 }

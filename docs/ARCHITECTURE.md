@@ -28,7 +28,7 @@ components/
   workers/         # Live worker runtime UI (Phase 9)
   entities/        # Normalized entity preview components (Phase 8)
   google-places/   # Google Places discovery UI (Phase 10)
-  websites/        # Website discovery UI (Phase 11)
+  duplicates/        # Duplicate resolution UI (Phase 12)
   maps/            # Map placeholders (Phase 10)
   auth/            # Auth UI placeholders
   ui/              # shadcn/ui primitives
@@ -495,6 +495,66 @@ UI and services depend on interfaces only — not Playwright. Future worker inte
 ### Configuration
 
 `lib/config/websites.ts` — `WEBSITE_WORKER_ENABLED`, `WEBSITE_EXTRACTION_MODE`, max URLs per job, robots.txt respect flag.
+
+## Phase 12 — Duplicate Resolution & Merge Center
+
+Professional duplicate resolution workflow for normalized entities. Human approval required — no automatic merge.
+
+### Routes
+
+| Route | Purpose |
+|-------|---------|
+| `/duplicates` | Pending matches dashboard with summary cards and filterable table |
+| `/duplicates/[matchId]` | Side-by-side comparison, merge preview, resolution actions |
+| `/duplicates/resolved` | Previously resolved matches |
+| `/duplicates/ignored` | Ignored / dismissed matches |
+
+### Merge Flow
+
+```
+Normalization pipeline detects potential matches → entity_matches (status: pending)
+  → Reviewer opens /duplicates/[matchId]
+  → Side-by-side comparison (DuplicateComparePanel)
+  → Optional field selection for merge (MergeFieldSelector)
+  → Merge preview (MergePreviewCard)
+  → POST /api/duplicates/[matchId]/resolve
+  → mergeService.resolveMatch()
+  → Update match status + create merge_history entry
+  → Update normalized_records status (merged/duplicate/approved) — no deletes
+```
+
+### Resolution Actions
+
+| Action | Effect |
+|--------|--------|
+| Merge Records | Create/update canonical record from field selections; mark A merged, B duplicate |
+| Mark Duplicate | Mark Record B as duplicate |
+| Keep Separate | Resolve match — entities remain distinct |
+| Ignore Match | Dismiss as false positive |
+| Approve Both | Approve both records independently |
+| Needs Review | Flag for additional review |
+
+### Audit Trail
+
+Every resolution action creates a `merge_history` record with performer, timestamp, notes, field selections, and result record ID. Original records are never deleted.
+
+### Canonical Record Strategy
+
+Merging creates or updates a canonical normalized record from reviewer-selected fields. Source records are preserved with updated status (`merged`, `duplicate`, or `approved`). Full audit trail in `merge_history`.
+
+### Collections
+
+| Collection | Purpose |
+|------------|---------|
+| `entity_matches` | Match pairs with status, reasons, confidence, resolution |
+| `merge_history` | Audit log of all resolution actions |
+| `normalized_records` | Entity records (status includes merged/duplicate) |
+
+### Services
+
+- `matchScoringService` — confidence levels, reason labels, field-to-reason mapping
+- `duplicateResolutionService` — dashboard data, match listing, detail loading
+- `mergeService` — merge preview, field selection, resolution execution
 
 ## Mock Mode
 

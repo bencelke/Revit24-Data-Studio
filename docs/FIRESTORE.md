@@ -21,7 +21,8 @@ Revit24 Data Studio uses Firestore for import job persistence with a repository/
 | `website_jobs`       | Website discovery execution jobs (Phase 11)          |
 | `website_raw`        | Raw public website metadata records (Phase 11)       |
 | `normalized_records` | Structured automotive entities (Phase 8)           |
-| `entity_matches`     | Duplicate detection results (Phase 8)                |
+| `entity_matches`     | Duplicate detection and resolution (Phase 8/12)      |
+| `merge_history`      | Merge resolution audit trail (Phase 12)              |
 | `normalization_logs` | Normalization pipeline audit trail (Phase 8)       |
 | `logs`             | Application audit logs                               |
 
@@ -273,17 +274,39 @@ All Firestore access is isolated in repositories. UI and components never call F
 | `normalizedAt`   | string   | ISO timestamp                            |
 | `workerVersion`  | string   | Normalization engine version             |
 
-## entity_matches Document (Phase 8)
+## entity_matches Document (Phase 8/12)
 
 | Field               | Type     | Description                         |
 |---------------------|----------|-------------------------------------|
-| `normalizedRecordId`| string   | Source normalized record ID         |
-| `matchedRecordId`   | string   | Potential duplicate record ID       |
-| `matchedDisplayName`| string   | Display name of matched record      |
-| `matchFields`       | string[] | Fields that matched                 |
-| `confidenceLevel`   | string   | high · medium · low · possible · none |
+| `recordAId`         | string   | First normalized record ID          |
+| `recordBId`         | string   | Second normalized record ID         |
+| `matchType`         | string   | automatic · manual                  |
+| `confidence`        | string   | high · medium · low · possible      |
 | `confidenceScore`   | number   | Match confidence score              |
+| `status`            | string   | pending · resolved · ignored · needs_review |
+| `reasons`           | string[] | Match reason codes                  |
+| `resolution`        | string?  | merge · keep_separate · mark_duplicate · approve_both |
+| `resolvedBy`        | string?  | Reviewer who resolved the match     |
+| `resolvedAt`        | timestamp? | When match was resolved           |
+| `notes`             | string?  | Resolution notes                    |
 | `createdAt`         | timestamp| When match was detected             |
+| `updatedAt`         | timestamp| Last update timestamp               |
+
+Legacy fields (`normalizedRecordId`, `matchedRecordId`, `matchFields`, `confidenceLevel`) are written for backward compatibility.
+
+## merge_history Document (Phase 12)
+
+| Field            | Type     | Description                              |
+|------------------|----------|------------------------------------------|
+| `matchId`        | string   | Related entity_matches document ID       |
+| `recordAId`      | string   | Record A at time of action               |
+| `recordBId`      | string   | Record B at time of action               |
+| `action`         | string   | merge · mark_duplicate · keep_separate · ignore_match · approve_both · needs_review |
+| `performedBy`    | string   | Reviewer who performed the action        |
+| `performedAt`    | timestamp| When action was performed                |
+| `notes`          | string?  | Optional resolution notes                |
+| `fieldSelections`| object?  | Field merge selections (for merge action)  |
+| `resultRecordId` | string?  | Canonical record ID after merge          |
 
 ## Mock Mode
 

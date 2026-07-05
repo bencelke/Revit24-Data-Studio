@@ -164,3 +164,23 @@ export {
 } from "./websiteNormalizationService";
 export { importSelectedWebsites } from "./websiteImportService";
 export { findWebsiteDuplicates } from "./websiteDuplicateService";
+export {
+  getDuplicatesDashboardData,
+  listDuplicateMatches,
+  getDuplicateMatchDetail,
+  performMatchResolution,
+} from "./duplicateResolutionService";
+export {
+  buildMergePreview,
+  prepareMergePreviewData,
+  resolveMatch,
+  getDefaultFieldSelections,
+  updateFieldSelection,
+} from "./mergeService";
+export {
+  mapFieldsToReasons,
+  resolveConfidenceLevel,
+  getReasonLabel,
+  getMatchStatusLabel,
+  getResolutionLabel,
+} from "./matchScoringService";

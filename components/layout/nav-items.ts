@@ -6,6 +6,7 @@ import {
   Building2,
   MapPin,
   Globe,
+  Copy,
   Settings,
 } from "lucide-react";
 import type { NavItem } from "@/lib/types";
@@ -40,6 +41,12 @@ export const mainNavItems: NavItem[] = [
     href: "/entities",
     icon: Building2,
     description: "Normalized automotive records",
+  },
+  {
+    title: "Duplicates",
+    href: "/duplicates",
+    icon: Copy,
+    description: "Resolve and merge duplicate entities",
   },
   {
     title: "Google Places",

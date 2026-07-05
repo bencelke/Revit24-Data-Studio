@@ -1,0 +1,12 @@
+export { DuplicatesPageNav } from "./DuplicatesPageNav";
+export { DuplicateSummaryCards } from "./DuplicateSummaryCards";
+export { DuplicateMatchesTable } from "./DuplicateMatchesTable";
+export { DuplicateConfidenceBadge } from "./DuplicateConfidenceBadge";
+export { DuplicateReasonBadges } from "./DuplicateReasonBadges";
+export { DuplicateComparePanel } from "./DuplicateComparePanel";
+export { MergeFieldSelector } from "./MergeFieldSelector";
+export { MergePreviewCard } from "./MergePreviewCard";
+export { MergeActionDialog } from "./MergeActionDialog";
+export { MergeHistoryTimeline } from "./MergeHistoryTimeline";
+export { DuplicatesDashboardClient } from "./DuplicatesDashboardClient";
+export { DuplicateMatchDetailClient } from "./DuplicateMatchDetailClient";

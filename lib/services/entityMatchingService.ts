@@ -1,12 +1,15 @@
-import type {
-  EntityMatchDocument,
-  MatchConfidenceLevel,
-  NormalizedRecordDocument,
-} from "@/lib/types/normalization";
+import type { NormalizedRecordDocument } from "@/lib/types/normalization";
+import type { EntityMatchDocument, MatchReason } from "@/lib/types/duplicates";
+import type { MatchConfidenceLevel } from "@/lib/types/normalization";
+import {
+  mapFieldsToReasons,
+  resolveConfidenceLevel,
+} from "@/lib/services/matchScoringService";
 
 export interface MatchCandidate {
   record: NormalizedRecordDocument;
   matchFields: string[];
+  reasons: MatchReason[];
   confidenceScore: number;
   confidenceLevel: MatchConfidenceLevel;
 }
@@ -85,16 +88,10 @@ export function compareRecords(
   return {
     record: candidate,
     matchFields,
+    reasons: mapFieldsToReasons(matchFields),
     confidenceScore: Math.min(100, score),
     confidenceLevel,
   };
-}
-
-function resolveConfidenceLevel(score: number): MatchConfidenceLevel {
-  if (score >= 70) return "high";
-  if (score >= 45) return "medium";
-  if (score >= 25) return "low";
-  return "possible";
 }
 
 export function findPotentialMatches(
@@ -113,13 +110,20 @@ export function toEntityMatchDocument(
   timestamp: string,
 ): Omit<EntityMatchDocument, "id"> {
   return {
-    normalizedRecordId: sourceId,
-    matchedRecordId: match.record.id,
-    matchedDisplayName: match.record.displayName,
-    matchFields: match.matchFields,
-    confidenceLevel: match.confidenceLevel,
+    recordAId: sourceId,
+    recordBId: match.record.id,
+    matchType: "automatic",
+    confidence: match.confidenceLevel,
     confidenceScore: match.confidenceScore,
+    status: "pending",
+    reasons: match.reasons,
     createdAt: timestamp,
+    updatedAt: timestamp,
+    resolvedBy: null,
+    resolvedAt: null,
+    resolution: null,
+    notes: null,
+    matchedDisplayName: match.record.displayName,
   };
 }
 

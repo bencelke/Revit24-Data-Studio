@@ -14,13 +14,20 @@ export type WorkerLogLevel = (typeof WORKER_LOG_LEVELS)[number];
 export interface WorkerDocument {
   id: string;
   name: string;
+  hostname: string;
+  machineName: string;
   version: string;
   status: WorkerStatus;
   machine: string;
   platform: string;
+  environment: string;
+  startedAt: string;
   lastHeartbeat: string;
+  currentJob: string | null;
   jobsCompleted: number;
   jobsRunning: number;
+  cpuUsagePercent: number | null;
+  memoryUsagePercent: number | null;
 }
 
 export interface WorkerLogDocument {
@@ -35,6 +42,7 @@ export interface WorkerLogDocument {
 }
 
 export type CreateWorkerLogInput = Omit<WorkerLogDocument, "id">;
+export type CreateWorkerInput = Omit<WorkerDocument, "id">;
 
 export interface WorkerLogsFilterParams {
   search?: string;

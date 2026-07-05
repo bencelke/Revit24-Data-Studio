@@ -88,9 +88,11 @@ export function applyWorkerLogsFilters(
 export async function getWorkersPageData(): Promise<WorkersPageData> {
   const firebaseConfigured = isFirebaseConfigured();
   const useFirestore = isFirestoreAvailable();
+  const { listLiveWorkers } = await import("@/lib/services/heartbeatService");
+  const workers = await listLiveWorkers();
 
   return {
-    workers: mockWorkerStore.listWorkers(),
+    workers,
     dataMode: useFirestore ? "firestore" : "mock",
     firebaseConfigured,
   };
@@ -103,10 +105,17 @@ export async function getWorkerLogsPageData(): Promise<WorkerLogsPageData> {
 
   return {
     logs,
-    workers: mockWorkerStore.listWorkers(),
+    workers: await listLiveWorkers(),
     dataMode: useFirestore ? "firestore" : "mock",
     firebaseConfigured,
   };
+}
+
+async function listLiveWorkers(): Promise<WorkerDocument[]> {
+  const { listLiveWorkers: fetchLiveWorkers } = await import(
+    "@/lib/services/heartbeatService"
+  );
+  return fetchLiveWorkers();
 }
 
 export async function listWorkerLogs(max = 100): Promise<WorkerLogDocument[]> {

@@ -20,6 +20,8 @@ interface SeedJob {
   failedRecords: number;
   duplicateRecords: number;
   workerVersion: string | null;
+  claimedByWorkerId: string | null;
+  claimedAt: string | null;
   notes: string | null;
 }
 
@@ -39,6 +41,8 @@ const SEED_JOBS: SeedJob[] = [
     failedRecords: 12,
     duplicateRecords: 8,
     workerVersion: "0.0.0-dev",
+    claimedByWorkerId: "worker_mac_studio",
+    claimedAt: new Date(now - 3.5 * HOURS).toISOString(),
     notes: "Primary extraction run for approved BMW club profiles",
   },
   {
@@ -56,6 +60,8 @@ const SEED_JOBS: SeedJob[] = [
     failedRecords: 0,
     duplicateRecords: 0,
     workerVersion: null,
+    claimedByWorkerId: null,
+    claimedAt: null,
     notes: null,
   },
   {
@@ -73,6 +79,8 @@ const SEED_JOBS: SeedJob[] = [
     failedRecords: 15,
     duplicateRecords: 7,
     workerVersion: "0.0.0-dev",
+    claimedByWorkerId: "worker_ubuntu",
+    claimedAt: new Date(now - 25 * HOURS).toISOString(),
     notes: "Completed overnight run",
   },
   {
@@ -90,6 +98,8 @@ const SEED_JOBS: SeedJob[] = [
     failedRecords: 15,
     duplicateRecords: 0,
     workerVersion: "0.0.0-dev",
+    claimedByWorkerId: "worker_ubuntu",
+    claimedAt: new Date(now - 7.5 * HOURS).toISOString(),
     notes: "Worker connection lost — retry scheduled",
   },
   {
@@ -107,6 +117,8 @@ const SEED_JOBS: SeedJob[] = [
     failedRecords: 5,
     duplicateRecords: 5,
     workerVersion: "0.0.0-dev",
+    claimedByWorkerId: "worker_mac_studio",
+    claimedAt: new Date(now - 0.75 * HOURS).toISOString(),
     notes: "Paused by admin for priority reorder",
   },
   {
@@ -124,6 +136,8 @@ const SEED_JOBS: SeedJob[] = [
     failedRecords: 0,
     duplicateRecords: 0,
     workerVersion: null,
+    claimedByWorkerId: null,
+    claimedAt: null,
     notes: null,
   },
   {
@@ -141,6 +155,8 @@ const SEED_JOBS: SeedJob[] = [
     failedRecords: 8,
     duplicateRecords: 0,
     workerVersion: "0.0.0-dev",
+    claimedByWorkerId: null,
+    claimedAt: null,
     notes: "Automatic retry after transient failure",
   },
 ];

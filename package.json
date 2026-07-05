@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "worker": "node --experimental-strip-types workers/runtime/cli.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",

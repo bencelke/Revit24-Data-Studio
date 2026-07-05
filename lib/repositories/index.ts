@@ -59,6 +59,18 @@ export {
 export { createWorkerLog, listWorkerLogs } from "./workerLogsRepository";
 
 export {
+  registerWorker,
+  getWorker,
+  listWorkers,
+  updateWorker,
+  upsertWorkerById,
+} from "./workersRepository";
+
+export {
+  claimExtractionJobTransaction,
+} from "./extractionJobsRepository";
+
+export {
   upsertInstagramProfile,
   getInstagramProfileByUsername,
   getInstagramProfile,

@@ -36,6 +36,9 @@ function mapJobDoc(id: string, data: DocumentData): ExtractionJobDocument {
     failedRecords: Number(data.failedRecords ?? 0),
     duplicateRecords: Number(data.duplicateRecords ?? 0),
     workerVersion: data.workerVersion != null ? String(data.workerVersion) : null,
+    claimedByWorkerId:
+      data.claimedByWorkerId != null ? String(data.claimedByWorkerId) : null,
+    claimedAt: data.claimedAt ? timestampToIso(data.claimedAt) : null,
     notes: data.notes != null ? String(data.notes) : null,
   };
 }
@@ -62,6 +65,8 @@ export async function createExtractionJob(
     failedRecords: input.failedRecords,
     duplicateRecords: input.duplicateRecords,
     workerVersion: input.workerVersion,
+    claimedByWorkerId: input.claimedByWorkerId,
+    claimedAt: input.claimedAt ? isoToTimestamp(input.claimedAt) : null,
     notes: input.notes,
   };
 
@@ -95,6 +100,7 @@ export async function updateExtractionJob(
   if (data.createdAt) updatePayload.createdAt = isoToTimestamp(data.createdAt);
   if (data.startedAt) updatePayload.startedAt = isoToTimestamp(data.startedAt);
   if (data.completedAt) updatePayload.completedAt = isoToTimestamp(data.completedAt);
+  if (data.claimedAt) updatePayload.claimedAt = isoToTimestamp(data.claimedAt);
 
   await updateDoc(doc(db, FIRESTORE_COLLECTIONS.extraction_jobs, id), updatePayload);
 }
@@ -104,4 +110,38 @@ export async function getExtractionJobsByImportJobId(
 ): Promise<ExtractionJobDocument[]> {
   const jobs = await listExtractionJobs();
   return jobs.filter((job) => job.importJobId === importJobId);
+}
+
+export async function claimExtractionJobTransaction(
+  jobId: string,
+  workerId: string,
+): Promise<ExtractionJobDocument | null> {
+  const db = getFirestoreDb();
+  const jobRef = doc(db, FIRESTORE_COLLECTIONS.extraction_jobs, jobId);
+  const { runTransaction } = await import("firebase/firestore");
+
+  return runTransaction(db, async (transaction) => {
+    const snapshot = await transaction.get(jobRef);
+    if (!snapshot.exists()) return null;
+
+    const data = snapshot.data();
+    const status = data.status as ExtractionJobDocument["status"];
+    if (status !== "queued" && status !== "retrying") return null;
+
+    const claimedAt = new Date().toISOString();
+    transaction.update(jobRef, {
+      status: "running",
+      claimedByWorkerId: workerId,
+      claimedAt: isoToTimestamp(claimedAt),
+      startedAt: data.startedAt ?? isoToTimestamp(claimedAt),
+    });
+
+    return mapJobDoc(jobId, {
+      ...data,
+      status: "running",
+      claimedByWorkerId: workerId,
+      claimedAt,
+      startedAt: data.startedAt ?? claimedAt,
+    });
+  });
 }

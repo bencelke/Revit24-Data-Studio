@@ -52,6 +52,8 @@ export interface ExtractionJobDocument {
   failedRecords: number;
   duplicateRecords: number;
   workerVersion: string | null;
+  claimedByWorkerId: string | null;
+  claimedAt: string | null;
   notes: string | null;
 }
 

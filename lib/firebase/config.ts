@@ -13,6 +13,7 @@ export const FIRESTORE_COLLECTIONS = {
   extraction_jobs: "extraction_jobs",
   extraction_records: "extraction_records",
   worker_logs: "worker_logs",
+  workers: "workers",
   instagram_profiles: "instagram_profiles",
   normalized_records: "normalized_records",
   entity_matches: "entity_matches",

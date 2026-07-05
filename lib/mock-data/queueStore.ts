@@ -87,4 +87,21 @@ export const mockQueueStore = {
   hasJobs(): boolean {
     return mockJobs.size > 0;
   },
+
+  claimExtractionJob(jobId: string, workerId: string) {
+    const job = mockJobs.get(jobId);
+    if (!job) return null;
+    if (job.status !== "queued" && job.status !== "retrying") return null;
+
+    const claimedAt = new Date().toISOString();
+    const updated: ExtractionJobDocument = {
+      ...job,
+      status: "running",
+      claimedByWorkerId: workerId,
+      claimedAt,
+      startedAt: job.startedAt ?? claimedAt,
+    };
+    mockJobs.set(jobId, updated);
+    return updated;
+  },
 };

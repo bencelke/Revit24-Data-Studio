@@ -161,6 +161,15 @@ export {
   isRetryableError,
 } from "./profile-extraction";
 
+export type { LiveJobProgress } from "./runtime";
+
+export type {
+  ExtractionProvider,
+  JobExecutionContext,
+  JobExecutionProgress,
+  JobExecutionResult,
+} from "./extraction-provider";
+
 export type {
   InstagramProfileStatus,
   InstagramProfileDocument,

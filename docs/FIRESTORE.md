@@ -13,6 +13,7 @@ Revit24 Data Studio uses Firestore for import job persistence with a repository/
 | `extraction_jobs`  | Extraction queue jobs from approved imports (Phase 6) |
 | `extraction_records` | Per-profile extraction tasks within a job (Phase 6)  |
 | `worker_logs`      | Extraction worker event logs (Phase 6)               |
+| `workers`          | Registered worker fleet with heartbeats (Phase 9)    |
 | `instagram_profiles` | Extracted public profile metadata (Phase 7)        |
 | `normalized_records` | Structured automotive entities (Phase 8)           |
 | `entity_matches`     | Duplicate detection results (Phase 8)                |

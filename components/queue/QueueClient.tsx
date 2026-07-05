@@ -18,10 +18,13 @@ import type {
 } from "@/lib/types/queue";
 import type { ImportDataMode } from "@/lib/types/import-jobs";
 import { MOCK_MODE_WARNING } from "@/lib/errors/app-errors";
+import { LiveQueueProgress } from "@/components/workers/LiveQueueProgress";
+import type { LiveJobProgress } from "@/lib/types/runtime";
 
 interface QueueDashboardClientProps {
   stats: QueueDashboardStats;
   initialJobs: QueueJobView[];
+  initialLiveJobs?: LiveJobProgress[];
   dataMode: ImportDataMode;
   firebaseConfigured: boolean;
 }
@@ -29,6 +32,7 @@ interface QueueDashboardClientProps {
 export function QueueDashboardClient({
   stats,
   initialJobs,
+  initialLiveJobs = [],
   dataMode,
   firebaseConfigured,
 }: QueueDashboardClientProps) {
@@ -89,6 +93,9 @@ export function QueueDashboardClient({
       ) : null}
 
       <QueueSummaryCards stats={stats} />
+
+      <LiveQueueProgress initialJobs={initialLiveJobs} />
+
       <QueueFilters filters={filters} onFiltersChange={setFilters} />
       <QueueTable
         jobs={result.jobs}

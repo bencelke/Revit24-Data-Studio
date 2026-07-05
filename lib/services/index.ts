@@ -101,3 +101,25 @@ export {
   findPotentialMatches,
   getMatchLevelLabel,
 } from "./entityMatchingService";
+export { claimNextQueuedJob, findNextClaimableJob } from "./jobClaimService";
+export {
+  registerWorkerInstance,
+  sendHeartbeat,
+  markWorkerOffline,
+  listLiveWorkers,
+  isHeartbeatExpired,
+} from "./heartbeatService";
+export {
+  buildLiveJobProgress,
+  computeRecordProgress,
+  formatEstimatedRemaining,
+} from "./progressService";
+export type { LiveJobProgress } from "@/lib/types/runtime";
+export {
+  getWorkersRuntimePageData,
+  getLiveQueueProgress,
+  getLiveJobProgress,
+  runWorkerRuntimeCycle,
+  startWorkerRuntimeLoop,
+  getWorkerRuntimeState,
+} from "./workerRuntimeService";

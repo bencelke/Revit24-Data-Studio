@@ -430,6 +430,8 @@ export async function createExtractionJobFromImportJob(
     failedRecords: 0,
     duplicateRecords: 0,
     workerVersion: null,
+    claimedByWorkerId: null,
+    claimedAt: null,
     notes: null,
   };
 

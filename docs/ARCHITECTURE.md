@@ -25,6 +25,7 @@ components/
   imports/         # Import Center components
   review/          # Admin Review Center components
   queue/           # Extraction queue & worker management components
+  workers/         # Live worker runtime UI (Phase 9)
   entities/        # Normalized entity preview components (Phase 8)
   auth/            # Auth UI placeholders
   ui/              # shadcn/ui primitives
@@ -300,6 +301,84 @@ All services accept structured inputs and return typed outputs — swap implemen
 
 Main dashboard displays pipeline stats: Raw Imports, Extraction Jobs, Normalized Records, Pending Review, Approved.
 
+## Phase 9 — Worker Runtime & Job Processing Engine
+
+First phase with **real processing**. The worker runtime polls Firestore, claims queued extraction jobs atomically, processes records sequentially, updates progress, logs events, and triggers normalization after successful extraction.
+
+### Routes & API
+
+| Route | Purpose |
+|-------|---------|
+| `/workers` | Live worker fleet — heartbeats, current job, CPU/memory placeholders |
+| `GET /api/workers` | List registered workers with live/offline status |
+| `POST /api/workers/runtime/tick` | Run one poll → claim → execute cycle |
+| `GET /api/queue/live` | Live queue progress for auto-refresh (10s polling) |
+
+### Worker Runtime Architecture
+
+```
+workers/runtime/
+  workerRuntime.ts          → Main loop (register → heartbeat → poll → execute)
+  jobScheduler.ts           → Find claimable jobs by priority
+  jobExecutor.ts            → Platform-agnostic job execution
+  heartbeat.ts              → 30s heartbeat interval
+  workerRegistration.ts     → Worker identity + platform detection
+  shutdownHandler.ts        → Graceful SIGINT/SIGTERM shutdown
+  extractionProviderRegistry.ts → Platform → provider mapping
+  providers/instagramExtractionProvider.ts → Instagram implementation
+```
+
+```
+Worker starts
+  → registerWorkerInstance() → workers collection
+  → heartbeat every 30s → lastHeartbeat, status, currentJob
+  → claimNextQueuedJob() → Firestore transaction (queued/retrying → running)
+  → executeExtractionJob() → ExtractionProvider (NOT Instagram-specific)
+  → per record: extract → save profile → normalize → update progress → log
+  → mark job completed → poll again
+```
+
+Run as standalone process: `npm run worker`
+
+Configuration: `lib/config/runtime.ts` (polling interval, heartbeat, retry count, batch size, worker name/version).
+
+### Worker Registration (`workers` collection)
+
+Fields: `id`, `hostname`, `machineName`, `platform`, `version`, `status`, `startedAt`, `lastHeartbeat`, `currentJob`, `jobsCompleted`, `cpuUsagePercent`, `memoryUsagePercent`.
+
+Workers considered offline when heartbeat expires (default 90s).
+
+### Job Claim Flow
+
+1. Worker polls for jobs with status `queued` or `retrying`
+2. Jobs sorted by priority (critical → high → normal → low)
+3. Firestore transaction atomically sets `status: running`, `claimedByWorkerId`, `claimedAt`
+4. If another worker already claimed → transaction fails → skip
+5. Only ONE worker processes a job at a time
+
+### Processing Flow (per record)
+
+```
+Load next pending extraction_record
+  → ExtractionProvider.executeJob() (Instagram provider for now)
+  → Save to instagram_profiles
+  → normalizeInstagramProfile() → normalized_records
+  → Update job progress (processed, successful, failed, %)
+  → Write worker_logs event
+```
+
+### Retry Logic
+
+- Max attempts: configurable (default 3)
+- Retry delay: configurable (default 5s)
+- Retryable errors: `NETWORK_FAILURE`, `TIMEOUT`, `RATE_LIMITED`
+- Permanent errors: `PROFILE_NOT_FOUND`, `PRIVATE_PROFILE`, `PARSE_ERROR`
+- Record status: `retrying` between attempts
+
+### ExtractionProvider Interface
+
+Runtime never depends on Instagram directly. Platform providers implement `ExtractionProvider` in `lib/types/extraction-provider.ts`. Registry at `workers/runtime/extractionProviderRegistry.ts` — future: Google Places, TikTok, YouTube, Website.
+
 ## Mock Mode
 
 When Firebase is not configured:
@@ -312,8 +391,7 @@ When Firebase is not configured:
 ## Out of Scope (Future Phases)
 
 - Browser automation providers (Playwright, Puppeteer, Selenium) — swap via `ProfileExtractionProvider`
-- Background worker daemons and OS schedulers
-- Google Places / TikTok / website extractors (interface ready)
+- Google Places / TikTok / website extractors (ExtractionProvider registry ready)
 - AI classification (normalization services are AI-ready)
 - Profile metadata extraction
 - Chrome extension

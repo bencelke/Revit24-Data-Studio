@@ -72,3 +72,32 @@ export {
   DISCOVERY_QUERY_TYPES,
   DISCOVERY_TARGET_STATUSES,
 } from "./import-jobs";
+
+export type {
+  ReviewRecordStatus,
+  ReviewAction,
+  ReviewRole,
+  ReviewPermissions,
+  ReviewRecordFields,
+  ReviewRecordNote,
+  ApprovedRecordDocument,
+  ReviewHistoryEntry,
+  ReviewDashboardStats,
+  ReviewRecordView,
+  ReviewSortField,
+  ReviewSortDirection,
+  ReviewFilterParams,
+  ReviewListResult,
+  ReviewActivityItem,
+  ReviewDashboardData,
+  ReviewRecordDetailData,
+  NeedsEditPayload,
+  ReviewActionPayload,
+} from "./review";
+
+export {
+  REVIEW_RECORD_STATUSES,
+  REVIEW_ROLE_PERMISSIONS,
+  getDefaultReviewPermissions,
+  createDefaultReviewFields,
+} from "./review";

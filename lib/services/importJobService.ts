@@ -31,6 +31,7 @@ import type {
   InstagramProfileBulkParseResult,
   InstagramProfileInput,
 } from "@/lib/types/import-jobs";
+import { createDefaultReviewFields } from "@/lib/types/review";
 import type { ImportJob, ImportStatus as LegacyImportStatus } from "@/lib/types/imports";
 import { getImportJobs as getMockLegacyImportJobs } from "@/lib/services/importService";
 
@@ -145,6 +146,7 @@ function buildRecordInputs(
     duplicateOf: row.duplicateOf,
     createdAt: timestamp,
     updatedAt: timestamp,
+    ...createDefaultReviewFields(row.status, INSTAGRAM_SOURCE),
   }));
 }
 

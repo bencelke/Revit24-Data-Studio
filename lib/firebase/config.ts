@@ -8,6 +8,8 @@ export const FIRESTORE_COLLECTIONS = {
   jobs: "jobs",
   import_jobs: "import_jobs",
   import_records: "import_records",
+  approved_records: "approved_records",
+  review_history: "review_history",
 } as const;
 
 export type FirestoreCollectionName =

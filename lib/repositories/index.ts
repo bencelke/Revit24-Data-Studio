@@ -19,6 +19,8 @@ export {
 
 export {
   createImportRecords,
+  getImportRecord,
+  listAllImportRecords,
   listImportRecords,
   updateImportRecord,
   deleteImportRecord,
@@ -26,6 +28,19 @@ export {
   findExistingRecordsByUsernames,
   deleteImportRecordsByJobId,
 } from "./importRecordsRepository";
+
+export {
+  createApprovedRecord,
+  getApprovedRecord,
+  getApprovedRecordByImportRecordId,
+  listApprovedRecords,
+} from "./approvedRecordsRepository";
+
+export {
+  createReviewHistoryEntry,
+  listReviewHistoryByRecordId,
+  listRecentReviewHistory,
+} from "./reviewHistoryRepository";
 
 export { createAppLog, listRecentAppLogs } from "./appLogsRepository";
 

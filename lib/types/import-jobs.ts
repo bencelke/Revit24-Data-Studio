@@ -35,7 +35,9 @@ export interface ImportJobDocument {
   metadata: Record<string, unknown> | null;
 }
 
-export interface ImportRecordDocument {
+import type { ReviewRecordFields } from "@/lib/types/review";
+
+export interface ImportRecordDocument extends ReviewRecordFields {
   id: string;
   jobId: string;
   originalInput: string;

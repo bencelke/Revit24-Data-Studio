@@ -24,6 +24,17 @@ export {
   updateImportJobStatus,
 } from "./importJobService";
 export {
+  applyReviewRecordFilters,
+  formatReviewDate,
+  getApprovedRecordsList,
+  getReviewDashboardData,
+  getReviewImportSourceLabel,
+  getReviewRecordDetail,
+  getReviewRecordsList,
+  getReviewStatusLabel,
+  performReviewAction,
+} from "./reviewService";
+export {
   createInstagramProfileImportJobFromText,
   getDiscoveryPlatformLabel,
   getDiscoveryQueryTypeLabel,

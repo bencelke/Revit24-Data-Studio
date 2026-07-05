@@ -1,21 +1,30 @@
 import type { Metadata } from "next";
 import { AppShell } from "@/components/layout";
-import { PlaceholderPage } from "@/components/layout/placeholder-page";
+import { ReviewDashboardClient, ReviewPageNav } from "@/components/review";
+import { getReviewDashboardData } from "@/lib/services/reviewService";
 
 export const metadata: Metadata = {
-  title: "Review",
+  title: "Review Queue",
 };
 
-export default function ReviewPage() {
+export default async function ReviewPage() {
+  const data = await getReviewDashboardData();
+
   return (
     <AppShell
-      title="Review"
-      description="Classify, verify, and approve records before ShiftIt import"
+      title="Review Center"
+      description="Moderate imported records before they become live in ShiftIt"
     >
-      <PlaceholderPage
-        title="Review Queue"
-        description="Future home for record classification, duplicate detection, and admin approval workflows."
-      />
+      <div className="space-y-6">
+        <ReviewPageNav active="queue" />
+        <ReviewDashboardClient
+          stats={data.stats}
+          initialRecords={data.records}
+          recentActivity={data.recentActivity}
+          dataMode={data.dataMode}
+          firebaseConfigured={data.firebaseConfigured}
+        />
+      </div>
     </AppShell>
   );
 }

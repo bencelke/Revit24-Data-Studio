@@ -1,3 +1,4 @@
+import Link from "next/link";
 import {
   Table,
   TableBody,
@@ -7,6 +8,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/imports/EmptyState";
 import { formatQueueDate } from "@/lib/services/queueService";
 import type { ExtractionRecordDocument, ExtractionRecordStatus } from "@/lib/types/queue";
@@ -49,6 +51,7 @@ export function ExtractionRecordsTable({ records }: ExtractionRecordsTableProps)
             <TableHead>Completed</TableHead>
             <TableHead>Last Error</TableHead>
             <TableHead>Worker</TableHead>
+            <TableHead className="text-right">Preview</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -80,6 +83,20 @@ export function ExtractionRecordsTable({ records }: ExtractionRecordsTableProps)
               </TableCell>
               <TableCell className="text-muted-foreground">
                 {record.workerId ?? "—"}
+              </TableCell>
+              <TableCell className="text-right">
+                {record.username && record.status === "completed" ? (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    nativeButton={false}
+                    render={<Link href={`/profiles/${record.username}`} />}
+                  >
+                    View
+                  </Button>
+                ) : (
+                  "—"
+                )}
               </TableCell>
             </TableRow>
           ))}

@@ -55,7 +55,16 @@ export {
   getWorkerLogLevelLabel,
   getWorkersPageData,
   getWorkerStatusLabel,
+  listWorkerLogs,
 } from "./workerService";
+export {
+  computeExtractionProgress,
+  extractInstagramProfileBatch,
+  extractSingleInstagramProfile,
+  getInstagramProfile,
+  getWorkerLogsForJob,
+  runInstagramExtractionJob,
+} from "./instagramExtractionService";
 export {
   createInstagramProfileImportJobFromText,
   getDiscoveryPlatformLabel,

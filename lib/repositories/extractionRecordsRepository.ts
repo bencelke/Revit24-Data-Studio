@@ -5,6 +5,7 @@ import {
   query,
   where,
   writeBatch,
+  updateDoc,
   type DocumentData,
 } from "firebase/firestore";
 import { FIRESTORE_COLLECTIONS } from "@/lib/firebase/config";
@@ -100,4 +101,17 @@ export async function listAllExtractionRecords(): Promise<ExtractionRecordDocume
   return snapshot.docs.map((recordDoc) =>
     mapRecordDoc(recordDoc.id, recordDoc.data()),
   );
+}
+
+export async function updateExtractionRecord(
+  id: string,
+  data: Partial<CreateExtractionRecordInput>,
+): Promise<void> {
+  const db = getFirestoreDb();
+  const updatePayload: Record<string, unknown> = { ...data };
+
+  if (data.startedAt) updatePayload.startedAt = isoToTimestamp(data.startedAt);
+  if (data.completedAt) updatePayload.completedAt = isoToTimestamp(data.completedAt);
+
+  await updateDoc(doc(db, FIRESTORE_COLLECTIONS.extraction_records, id), updatePayload);
 }

@@ -144,6 +144,8 @@ export interface QueueJobDetailData {
   job: QueueJobView;
   records: ExtractionRecordDocument[];
   timeline: QueueTimelineEvent[];
+  extractionProgress: import("./instagram-profiles").QueueExtractionProgress;
+  recentWorkerLogs: import("./workers").WorkerLogDocument[];
   dataMode: QueueDataMode;
   firebaseConfigured: boolean;
 }

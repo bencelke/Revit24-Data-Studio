@@ -39,6 +39,10 @@ import type {
   QueueTimelineEvent,
 } from "@/lib/types/queue";
 import {
+  computeExtractionProgress,
+  getWorkerLogsForJob,
+} from "@/lib/services/instagramExtractionService";
+import {
   calculateDurationMs,
   calculateProgress,
   formatDuration,
@@ -347,6 +351,8 @@ export async function getQueueJobDetail(jobId: string): Promise<QueueJobDetailDa
     job: toJobView(job, importJobMap),
     records,
     timeline,
+    extractionProgress: computeExtractionProgress(job, records),
+    recentWorkerLogs: await getWorkerLogsForJob(jobId),
     dataMode: useFirestore ? "firestore" : "mock",
     firebaseConfigured,
   };

@@ -179,6 +179,55 @@ progressPercent = Math.round((processedRecords / estimatedRecords) * 100)
 
 Displayed via animated progress bars in queue table and detail views.
 
+## Phase 7 — Instagram Public Profile Extraction Worker (MVP)
+
+First extraction worker — processes **one public Instagram profile at a time** with manual and small-batch execution. Uses a generic `ProfileExtractionProvider` interface so Instagram, Google Places, TikTok, or other providers can be swapped without changing queue UI or services.
+
+### Routes
+
+| Route | Purpose |
+|-------|---------|
+| `/profiles/[username]` | Internal extraction quality review (not ShiftIt) |
+| `POST /api/extraction/instagram` | Manual single profile or small batch test |
+| `POST /api/queue/[jobId]/extract` | Run extraction worker against queue job records |
+
+### Worker Architecture
+
+```
+workers/instagram/
+  instagramProfileExtractor.ts   → ProfileExtractionProvider (fetch public HTML)
+  instagramProfileParser.ts      → Parse og:meta + public JSON only
+  instagramProfileWorker.ts        → Process one extraction record
+  instagramWorkerRunner.ts         → Sequential batch runner
+```
+
+```
+instagramExtractionService
+    ↓
+ProfileExtractionProvider (interface)
+    ↓
+InstagramProfileExtractor (default) — swappable with Playwright / Graph API later
+    ↓
+instagramProfilesRepository → instagram_profiles collection
+```
+
+### Extraction Lifecycle
+
+1. Extraction job contains records with public profile URLs
+2. Worker fetches public HTML (or mock mode via `INSTAGRAM_EXTRACTION_MODE=mock`)
+3. Parser extracts only publicly visible metadata (og:tags, public counts, bio text)
+4. Public email/phone extracted **only from bio text** if visibly written
+5. Results saved to `instagram_profiles` — separate from approved ShiftIt records
+6. Extraction record + job progress updated; events logged to `worker_logs`
+
+### Public Metadata Collected
+
+Username, display name, bio, profile URL, profile image, website, follower/following/post counts (if visible), verified badge, business category, public email/phone from bio only.
+
+### Error Handling
+
+`PROFILE_NOT_FOUND` · `PRIVATE_PROFILE` · `NETWORK_FAILURE` · `TIMEOUT` · `UNEXPECTED_HTML` · `PARSE_ERROR` — with retryable vs non-retryable classification.
+
 ## Mock Mode
 
 When Firebase is not configured:
@@ -190,9 +239,9 @@ When Firebase is not configured:
 
 ## Out of Scope (Future Phases)
 
-- Browser automation and scrapers (Playwright, Puppeteer, Selenium)
-- Actual queue worker processes and OS schedulers
-- Instagram / Google / website network requests
+- Browser automation providers (Playwright, Puppeteer, Selenium) — swap via `ProfileExtractionProvider`
+- Background worker daemons and OS schedulers
+- Google Places / TikTok / website extractors (interface ready)
 - AI classification
 - Profile metadata extraction
 - Chrome extension

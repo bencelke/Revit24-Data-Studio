@@ -58,6 +58,13 @@ export {
 
 export { createWorkerLog, listWorkerLogs } from "./workerLogsRepository";
 
+export {
+  upsertInstagramProfile,
+  getInstagramProfileByUsername,
+  getInstagramProfile,
+  listInstagramProfiles,
+} from "./instagramProfilesRepository";
+
 export { createAppLog, listRecentAppLogs } from "./appLogsRepository";
 
 export {

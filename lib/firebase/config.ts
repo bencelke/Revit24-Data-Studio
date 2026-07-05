@@ -13,6 +13,7 @@ export const FIRESTORE_COLLECTIONS = {
   extraction_jobs: "extraction_jobs",
   extraction_records: "extraction_records",
   worker_logs: "worker_logs",
+  instagram_profiles: "instagram_profiles",
 } as const;
 
 export type FirestoreCollectionName =

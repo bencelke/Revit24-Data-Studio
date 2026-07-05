@@ -109,6 +109,11 @@ export async function getWorkerLogsPageData(): Promise<WorkerLogsPageData> {
   };
 }
 
+export async function listWorkerLogs(max = 100): Promise<WorkerLogDocument[]> {
+  const logs = await loadWorkerLogs();
+  return logs.slice(0, max);
+}
+
 export function formatWorkerDate(isoDate: string): string {
   return new Intl.DateTimeFormat("en-US", {
     month: "short",

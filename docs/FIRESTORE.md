@@ -13,6 +13,7 @@ Revit24 Data Studio uses Firestore for import job persistence with a repository/
 | `extraction_jobs`  | Extraction queue jobs from approved imports (Phase 6) |
 | `extraction_records` | Per-profile extraction tasks within a job (Phase 6)  |
 | `worker_logs`      | Extraction worker event logs (Phase 6)               |
+| `instagram_profiles` | Extracted public profile metadata (Phase 7)        |
 | `logs`             | Application audit logs                               |
 
 ## Planned Collections
@@ -167,6 +168,35 @@ Revit24 Data Studio uses Firestore for import job persistence with a repository/
 | `jobId`      | string?   | Related extraction job ID            |
 | `message`    | string    | Log message                          |
 
+## instagram_profiles Document
+
+| Field                  | Type      | Description                          |
+|------------------------|-----------|--------------------------------------|
+| `id`                   | string    | Document ID                          |
+| `username`             | string    | Instagram username                   |
+| `displayName`          | string?   | Public display name                  |
+| `bio`                  | string?   | Public bio text                      |
+| `profileImageUrl`      | string?   | Public profile image URL             |
+| `profileUrl`           | string    | Normalized profile URL               |
+| `website`              | string?   | External website link                |
+| `publicEmail`          | string?   | Email visible in bio only            |
+| `publicPhone`          | string?   | Phone visible in bio only            |
+| `followers`            | number?   | Follower count if publicly visible   |
+| `following`            | number?   | Following count if publicly visible  |
+| `posts`                | number?   | Post count if publicly visible       |
+| `verified`             | boolean   | Verified badge                       |
+| `businessCategory`     | string?   | Business category if visible         |
+| `extractedAt`          | timestamp | Extraction timestamp                 |
+| `extractionDurationMs` | number    | Extraction duration in ms            |
+| `workerVersion`        | string    | Worker semver                        |
+| `status`               | string    | `pending` · `completed` · `failed` · `private` · `not_found` |
+| `errorCode`            | string?   | Error code if failed                 |
+| `errorMessage`         | string?   | Error message if failed              |
+| `extractionJobId`      | string?   | Source extraction job                |
+| `extractionRecordId`   | string?   | Source extraction record             |
+| `importRecordId`       | string?   | Source import record                 |
+| `rawJson`              | object?   | Optional raw parse payload           |
+
 ## Repository Layer
 
 | Repository                    | File                                      |
@@ -178,6 +208,7 @@ Revit24 Data Studio uses Firestore for import job persistence with a repository/
 | Extraction jobs               | `lib/repositories/extractionJobsRepository.ts` |
 | Extraction records            | `lib/repositories/extractionRecordsRepository.ts` |
 | Worker logs                   | `lib/repositories/workerLogsRepository.ts` |
+| Instagram profiles            | `lib/repositories/instagramProfilesRepository.ts` |
 | Application logs              | `lib/repositories/appLogsRepository.ts`   |
 
 All Firestore access is isolated in repositories. UI and components never call Firestore directly.
@@ -190,6 +221,7 @@ All Firestore access is isolated in repositories. UI and components never call F
 | Review | `lib/services/reviewService.ts` | Approve, reject, needs edit, history, approved record copy, logging |
 | Queue | `lib/services/queueService.ts` | Extraction job creation, progress, status updates, mock execution |
 | Workers | `lib/services/workerService.ts` | Worker fleet data, worker log filtering |
+| Instagram extraction | `lib/services/instagramExtractionService.ts` | Run worker, save profiles, update queue progress |
 
 ## Mock Mode
 

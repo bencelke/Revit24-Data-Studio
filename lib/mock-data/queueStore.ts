@@ -61,6 +61,17 @@ export const mockQueueStore = {
       .sort((a, b) => (a.username ?? "").localeCompare(b.username ?? ""));
   },
 
+  updateExtractionRecord(
+    id: string,
+    data: Partial<ExtractionRecordDocument>,
+  ): ExtractionRecordDocument | null {
+    const existing = mockRecords.get(id);
+    if (!existing) return null;
+    const updated = { ...existing, ...data, id };
+    mockRecords.set(id, updated);
+    return updated;
+  },
+
   addTimelineEvent(jobId: string, event: Omit<QueueTimelineEvent, "id">): QueueTimelineEvent {
     const entry: QueueTimelineEvent = { ...event, id: generateId("timeline") };
     const events = mockTimeline.get(jobId) ?? [];

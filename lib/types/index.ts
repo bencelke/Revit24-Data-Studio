@@ -146,3 +146,28 @@ export type {
 } from "./workers";
 
 export { WORKER_STATUSES, WORKER_LOG_LEVELS } from "./workers";
+
+export type {
+  ExtractionErrorCode,
+  ExtractionError,
+  ProfileExtractionInput,
+  ProfileMetadata,
+  ProfileExtractionResult,
+  ProfileExtractionProvider,
+} from "./profile-extraction";
+
+export {
+  EXTRACTION_ERROR_CODES,
+  isRetryableError,
+} from "./profile-extraction";
+
+export type {
+  InstagramProfileStatus,
+  InstagramProfileDocument,
+  CreateInstagramProfileInput,
+  InstagramExtractionRunResult,
+  InstagramJobExtractionResult,
+  QueueExtractionProgress,
+} from "./instagram-profiles";
+
+export { INSTAGRAM_PROFILE_STATUSES } from "./instagram-profiles";

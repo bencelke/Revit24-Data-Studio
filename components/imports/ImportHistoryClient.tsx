@@ -93,12 +93,13 @@ export function ImportHistoryClient() {
 export function ImportPageNav({
   active,
 }: {
-  active: "overview" | "new" | "history";
+  active: "overview" | "new" | "history" | "discovery";
 }) {
   const links = [
     { href: "/imports", label: "Overview", key: "overview" as const },
     { href: "/imports/new", label: "New Import", key: "new" as const },
     { href: "/imports/history", label: "History", key: "history" as const },
+    { href: "/imports/discovery", label: "Discovery", key: "discovery" as const },
   ];
 
   return (

@@ -8,3 +8,4 @@ export { usersRepository } from "./users.repository";
 export { logsRepository } from "./logs.repository";
 export { jobsRepository } from "./jobs.repository";
 export type { ImportRepository } from "./importRepository";
+export type { InstagramProfileImportRepository } from "./instagramProfileImportRepository";

@@ -106,3 +106,22 @@ export interface ImportTimelineEvent {
 export interface ImportJobDetail extends ImportJob {
   timeline: ImportTimelineEvent[];
 }
+
+export type {
+  InstagramProfileInput,
+  InstagramProfileInputStatus,
+  InstagramProfileInputSummary,
+  InstagramProfileBulkParseResult,
+  InstagramProfileImportRecord,
+  InstagramProfileImportJob,
+  DiscoveryTarget,
+  DiscoveryPlatform,
+  DiscoveryQueryType,
+  DiscoveryTargetStatus,
+} from "./instagram-imports";
+
+export {
+  DISCOVERY_PLATFORMS,
+  DISCOVERY_QUERY_TYPES,
+  DISCOVERY_TARGET_STATUSES,
+} from "./instagram-imports";

@@ -10,3 +10,12 @@ export {
   getImportTypeLabel,
   getRecentImportJobs,
 } from "./importService";
+export {
+  createInstagramProfileImportJob,
+  getDiscoveryPlatformLabel,
+  getDiscoveryQueryTypeLabel,
+  getDiscoveryStatusLabel,
+  getDiscoveryTargets,
+  getInstagramProfileImportJobById,
+  getInstagramProfileImportJobs,
+} from "./instagramProfileImportService";

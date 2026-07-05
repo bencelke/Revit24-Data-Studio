@@ -33,7 +33,9 @@ export default function NewImportPage() {
               definition={definition}
               href={
                 definition.availability === "available"
-                  ? `/imports/new?type=${definition.type}`
+                  ? definition.type === "instagram"
+                    ? "/imports/new/instagram"
+                    : `/imports/new?type=${definition.type}`
                   : undefined
               }
             />

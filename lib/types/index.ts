@@ -34,10 +34,23 @@ export type {
   ImportSortField,
   ImportSortDirection,
   ImportTypeAvailability,
+  InstagramProfileInput,
+  InstagramProfileInputStatus,
+  InstagramProfileInputSummary,
+  InstagramProfileBulkParseResult,
+  InstagramProfileImportRecord,
+  InstagramProfileImportJob,
+  DiscoveryTarget,
+  DiscoveryPlatform,
+  DiscoveryQueryType,
+  DiscoveryTargetStatus,
 } from "./imports";
 
 export {
   IMPORT_STATUSES,
   IMPORT_TYPES,
   IMPORT_SOURCES,
+  DISCOVERY_PLATFORMS,
+  DISCOVERY_QUERY_TYPES,
+  DISCOVERY_TARGET_STATUSES,
 } from "./imports";

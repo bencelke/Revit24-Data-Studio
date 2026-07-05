@@ -39,7 +39,9 @@ export default function NewImportPage() {
                       ? "/google-places/search"
                       : definition.type === "public_website"
                         ? "/imports/websites"
-                        : `/imports/new?type=${definition.type}`
+                        : definition.type === "csv_upload"
+                          ? "/imports/csv/new"
+                          : `/imports/new?type=${definition.type}`
                   : undefined
               }
             />

@@ -184,3 +184,16 @@ export {
   getMatchStatusLabel,
   getResolutionLabel,
 } from "./matchScoringService";
+export {
+  getCsvImportPageData,
+  getCsvImportHistoryData,
+  getCsvImportJobDetail,
+  parseAndDetectCsv,
+  validateCsvImportPreview,
+  createCsvImportJobFromUpload,
+  buildPreviewRows,
+} from "./csvImportService";
+export { parseCsvContent, generateCsvTemplate, validateCsvFileSize, validateCsvRowCount } from "./csvParserService";
+export { autoDetectFieldMapping, applyFieldMapping, isMappingComplete } from "./csvMappingService";
+export { validateCsvRow, compareCsvRowToRecord } from "./csvValidationService";
+export { csvRowToRaw, normalizeCsvRow, previewNormalizedCsvRow } from "./csvNormalizationService";

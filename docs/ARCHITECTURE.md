@@ -556,6 +556,32 @@ Merging creates or updates a canonical normalized record from reviewer-selected 
 - `duplicateResolutionService` — dashboard data, match listing, detail loading
 - `mergeService` — merge preview, field selection, resolution execution
 
+## Phase 13 — CSV Bulk Import
+
+Collectors upload CSV files with automotive records. Records pass through mapping, validation, duplicate detection, normalization, and admin review.
+
+### Routes
+
+| Route | Purpose |
+|-------|---------|
+| `/imports/csv` | CSV import hub |
+| `/imports/csv/new` | Upload → map → validate → import wizard |
+| `/imports/csv/[jobId]` | Job detail with record preview |
+| `/imports/csv/history` | Import history |
+
+See [CSV_IMPORT.md](./CSV_IMPORT.md) for full schema, validation rules, and lifecycle documentation.
+
+### Collections
+
+| Collection | Purpose |
+|------------|---------|
+| `csv_import_jobs` | CSV upload jobs with mapping and status |
+| `csv_import_records` | Per-row validation and mapped data |
+
+### Normalization Integration
+
+`csvRowToRaw()` maps CSV rows → `RawExtractedMetadata` with `source: "csv"`. Feeds existing `runNormalizationPipeline()` — same entity model as other sources.
+
 ## Mock Mode
 
 When Firebase is not configured:

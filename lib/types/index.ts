@@ -305,3 +305,29 @@ export type {
   CreateNormalizedRecordInputPreview,
   ResolveMatchPayload,
 } from "./duplicates";
+
+export {
+  CSV_IMPORT_JOB_STATUSES,
+  CSV_VALIDATION_STATUSES,
+  CSV_TARGET_FIELDS,
+} from "./csv-import";
+
+export type {
+  CsvImportJobStatus,
+  CsvValidationStatus,
+  CsvTargetField,
+  CsvFieldMapping,
+  CsvMappedRow,
+  CsvDuplicateMatch,
+  CsvImportJobDocument,
+  CreateCsvImportJobInput,
+  CsvImportRecordDocument,
+  CreateCsvImportRecordInput,
+  CsvParseResult,
+  CsvValidationSummary,
+  CsvImportPreviewRow,
+  CsvImportPageData,
+  CsvImportJobDetailData,
+  CsvImportHistoryData,
+  CsvImportResult,
+} from "./csv-import";

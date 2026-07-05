@@ -97,6 +97,7 @@ export function getReviewImportSourceLabel(source: string): string {
     instagram: "Instagram",
     google_places: "Google Places",
     website: "Public Website",
+    csv: "CSV Import",
     manual: "Manual Entry",
   };
   return labels[source] ?? source;

@@ -1,11 +1,10 @@
 import type { Metadata } from "next";
 import {
   Activity,
-  AlertTriangle,
   CheckCircle2,
-  Clock,
+  Database,
   Layers,
-  Loader2,
+  ListTodo,
 } from "lucide-react";
 import { AppShell } from "@/components/layout";
 import { StatCard, RecentActivity } from "@/components/dashboard";
@@ -20,12 +19,11 @@ export const metadata: Metadata = {
 };
 
 const statIcons = {
-  "total-import-jobs": Layers,
+  "raw-imports": Layers,
+  "extraction-jobs": ListTodo,
+  "normalized-records": Database,
   "pending-review": Activity,
-  queued: Clock,
-  running: Loader2,
-  "completed-today": CheckCircle2,
-  "failed-today": AlertTriangle,
+  approved: CheckCircle2,
 } as const;
 
 export default async function DashboardPage() {
@@ -35,7 +33,7 @@ export default async function DashboardPage() {
   return (
     <AppShell
       title="Dashboard"
-      description="Overview of imports, review pipeline, and queue health"
+      description="Overview of imports, extraction, normalization, and review pipeline"
     >
       <div className="space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -53,7 +51,7 @@ export default async function DashboardPage() {
           />
         ) : null}
 
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5">
           {stats.map((stat) => (
             <StatCard
               key={stat.id}

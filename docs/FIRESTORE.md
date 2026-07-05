@@ -14,6 +14,9 @@ Revit24 Data Studio uses Firestore for import job persistence with a repository/
 | `extraction_records` | Per-profile extraction tasks within a job (Phase 6)  |
 | `worker_logs`      | Extraction worker event logs (Phase 6)               |
 | `instagram_profiles` | Extracted public profile metadata (Phase 7)        |
+| `normalized_records` | Structured automotive entities (Phase 8)           |
+| `entity_matches`     | Duplicate detection results (Phase 8)                |
+| `normalization_logs` | Normalization pipeline audit trail (Phase 8)       |
 | `logs`             | Application audit logs                               |
 
 ## Planned Collections
@@ -209,6 +212,9 @@ Revit24 Data Studio uses Firestore for import job persistence with a repository/
 | Extraction records            | `lib/repositories/extractionRecordsRepository.ts` |
 | Worker logs                   | `lib/repositories/workerLogsRepository.ts` |
 | Instagram profiles            | `lib/repositories/instagramProfilesRepository.ts` |
+| Normalized records            | `lib/repositories/normalizedRecordsRepository.ts` |
+| Entity matches                | `lib/repositories/entityMatchesRepository.ts` |
+| Normalization logs            | `lib/repositories/normalizationLogsRepository.ts` |
 | Application logs              | `lib/repositories/appLogsRepository.ts`   |
 
 All Firestore access is isolated in repositories. UI and components never call Firestore directly.
@@ -222,10 +228,60 @@ All Firestore access is isolated in repositories. UI and components never call F
 | Queue | `lib/services/queueService.ts` | Extraction job creation, progress, status updates, mock execution |
 | Workers | `lib/services/workerService.ts` | Worker fleet data, worker log filtering |
 | Instagram extraction | `lib/services/instagramExtractionService.ts` | Run worker, save profiles, update queue progress |
+| Normalization pipeline | `lib/services/normalizationPipeline.ts` | Orchestrate normalize → match → log |
+| Normalization | `lib/services/normalizationService.ts` | Field normalization (name, email, phone, social) |
+| Tags | `lib/services/tagService.ts` | Deterministic automotive tag detection |
+| Entity type | `lib/services/entityTypeService.ts` | Rule-based entity classification |
+| Brand detection | `lib/services/brandDetectionService.ts` | Vehicle brand and specialty detection |
+| Location | `lib/services/locationNormalizationService.ts` | Location parsing from bio text |
+| Confidence | `lib/services/confidenceService.ts` | Mock confidence scoring (25–95) |
+| Entity matching | `lib/services/entityMatchingService.ts` | Duplicate detection (no merge) |
+
+## normalized_records Document (Phase 8)
+
+| Field            | Type     | Description                              |
+|------------------|----------|------------------------------------------|
+| `id`             | string   | Document ID                              |
+| `source`         | string   | e.g. `instagram`, `google_places`        |
+| `sourceRecordId` | string   | ID of raw extracted record               |
+| `entityType`     | string   | Club, Shop, Detailer, Unknown, etc.      |
+| `displayName`    | string   | Normalized display name                  |
+| `username`       | string?  | Normalized username                      |
+| `website`        | string?  | Normalized website URL                   |
+| `publicEmail`    | string?  | Normalized public email                  |
+| `publicPhone`    | string?  | Normalized phone                         |
+| `country`        | string?  | Country                                  |
+| `state`          | string?  | State/region                             |
+| `city`           | string?  | City                                     |
+| `area`           | string?  | Area/neighborhood                        |
+| `address`        | string?  | Street address                           |
+| `latitude`       | number?  | Latitude                                 |
+| `longitude`      | number?  | Longitude                                |
+| `description`    | string?  | Bio/description text                     |
+| `tags`           | string[] | Automotive tags                          |
+| `vehicleBrands`  | string[] | Detected vehicle brands                  |
+| `specialties`    | string[] | Detected specialties                     |
+| `socialLinks`    | object   | Instagram, Facebook, TikTok, etc.        |
+| `status`         | string   | `pending_review` · `approved` · etc.     |
+| `confidenceScore`| number   | 25–95 mock confidence score              |
+| `normalizedAt`   | string   | ISO timestamp                            |
+| `workerVersion`  | string   | Normalization engine version             |
+
+## entity_matches Document (Phase 8)
+
+| Field               | Type     | Description                         |
+|---------------------|----------|-------------------------------------|
+| `normalizedRecordId`| string   | Source normalized record ID         |
+| `matchedRecordId`   | string   | Potential duplicate record ID       |
+| `matchedDisplayName`| string   | Display name of matched record      |
+| `matchFields`       | string[] | Fields that matched                 |
+| `confidenceLevel`   | string   | high · medium · low · possible · none |
+| `confidenceScore`   | number   | Match confidence score              |
+| `createdAt`         | timestamp| When match was detected             |
 
 ## Mock Mode
 
-When Firebase environment variables are missing, the app automatically uses in-memory mock storage (`importJobStore`, `reviewStore`, `queueStore`, `workerStore`) and displays a **Mock Mode** badge. Demo data is seeded via `reviewSeedData.ts` and `queueSeedData.ts`.
+When Firebase environment variables are missing, the app automatically uses in-memory mock storage (`importJobStore`, `reviewStore`, `queueStore`, `workerStore`, `normalizationStore`) and displays a **Mock Mode** badge. Demo data is seeded via `reviewSeedData.ts`, `queueSeedData.ts`, and `normalizationSeedData.ts`.
 
 ## Environment Variables
 

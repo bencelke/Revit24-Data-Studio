@@ -68,6 +68,22 @@ export {
 export { createAppLog, listRecentAppLogs } from "./appLogsRepository";
 
 export {
+  upsertNormalizedRecord,
+  listNormalizedRecords,
+  getNormalizedRecord,
+} from "./normalizedRecordsRepository";
+
+export {
+  createEntityMatch,
+  listEntityMatchesByRecordId,
+} from "./entityMatchesRepository";
+
+export {
+  createNormalizationLog,
+  listNormalizationLogsByRecordId,
+} from "./normalizationLogsRepository";
+
+export {
   getFirestoreDb,
   isFirestoreAvailable,
   isFirebaseConfigured,

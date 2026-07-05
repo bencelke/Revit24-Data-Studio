@@ -25,6 +25,7 @@ components/
   imports/         # Import Center components
   review/          # Admin Review Center components
   queue/           # Extraction queue & worker management components
+  entities/        # Normalized entity preview components (Phase 8)
   auth/            # Auth UI placeholders
   ui/              # shadcn/ui primitives
 
@@ -228,12 +229,83 @@ Username, display name, bio, profile URL, profile image, website, follower/follo
 
 `PROFILE_NOT_FOUND` · `PRIVATE_PROFILE` · `NETWORK_FAILURE` · `TIMEOUT` · `UNEXPECTED_HTML` · `PARSE_ERROR` — with retryable vs non-retryable classification.
 
+## Phase 8 — Data Normalization & Enrichment Engine
+
+Transforms raw extracted public metadata into structured automotive entities ready for admin review. **Deterministic rules only** — no AI, LLM, or automatic approvals in this phase.
+
+### Routes
+
+| Route | Purpose |
+|-------|---------|
+| `/entities` | Normalized entity list with summary cards and search |
+| `/entities/[id]` | Entity preview — profile, brands, tags, matches, review status |
+| `POST /api/normalization/run` | Trigger normalization for completed Instagram profiles |
+
+### Data Flow (Normalization Pipeline)
+
+```
+Raw Extracted Metadata (instagram_profiles, future providers)
+    ↓
+normalizationPipeline.runNormalizationPipeline()
+    ↓
+Services: normalizationService · tagService · entityTypeService
+          brandDetectionService · locationNormalizationService · confidenceService
+    ↓
+Repositories (normalizedRecords, entityMatches, normalizationLogs)
+    ↓
+Firestore (normalized_records, entity_matches, normalization_logs)
+    ↓
+Status: pending_review
+```
+
+### Normalized Record Model
+
+Key fields: `source`, `sourceRecordId`, `entityType`, `displayName`, `username`, location fields, `tags`, `vehicleBrands`, `specialties`, `socialLinks`, `confidenceScore`, `status`, `workerVersion`.
+
+Supported entity types: Club, Member, Shop, Detailer, Wrap Shop, Tint Shop, Wheel Shop, Performance Shop, Dyno Shop, Photographer, Videographer, Content Creator, Dealer, Track, Event Organizer, Car Event, Community Zone, Unknown.
+
+### Confidence Scoring
+
+Mock rule-based scoring (25–95) via `confidenceService.ts`:
+
+- Base score 25, additive points for display name, username, bio, website, email, phone, location, brands, tags, known entity type, verified badge
+- Labels: High (≥85), Medium (≥60), Low (≥40), Very Low (<40)
+
+### Entity Matching (Duplicate Detection)
+
+`entityMatchingService.ts` compares username, website, phone, public email, display name, city, and country across normalized records.
+
+Output levels: **High Confidence**, **Medium**, **Low**, **Possible Match**, **No Match**.
+
+**Detect only — no merge** performed. Matches stored in `entity_matches`.
+
+### Tag Engine
+
+Deterministic keyword matching in `tagService.ts` and `brandDetectionService.ts` for automotive brands (BMW, Mercedes, Porsche, etc.) and specialty tags (Drift, Track, Detailing, Wrap, etc.).
+
+### Future AI Integration Points
+
+| Service | Current | Future AI Replacement |
+|---------|---------|----------------------|
+| `entityTypeService` | Keyword rules | LLM classification with confidence |
+| `tagService` | Keyword dictionary | Semantic tag extraction |
+| `brandDetectionService` | Brand name matching | NER / brand ontology |
+| `locationNormalizationService` | Bio text parsing | Geocoding + address parsing |
+| `confidenceService` | Additive mock rules | ML confidence model |
+| `entityMatchingService` | Field equality + fuzzy name | Embedding similarity |
+
+All services accept structured inputs and return typed outputs — swap implementations without changing pipeline orchestration.
+
+### Dashboard Integration
+
+Main dashboard displays pipeline stats: Raw Imports, Extraction Jobs, Normalized Records, Pending Review, Approved.
+
 ## Mock Mode
 
 When Firebase is not configured:
 
-- In-memory store via `lib/mock-data/importJobStore.ts`, `reviewStore.ts`, and `queueStore.ts`
-- Seeded demo data via `reviewSeedData.ts` and `queueSeedData.ts` when empty
+- In-memory store via `lib/mock-data/importJobStore.ts`, `reviewStore.ts`, `queueStore.ts`, and `normalizationStore.ts`
+- Seeded demo data via `reviewSeedData.ts`, `queueSeedData.ts`, and `normalizationSeedData.ts` when empty
 - UI displays **Mock Mode** badge and warning banner
 - Application continues to function for development
 
@@ -242,7 +314,7 @@ When Firebase is not configured:
 - Browser automation providers (Playwright, Puppeteer, Selenium) — swap via `ProfileExtractionProvider`
 - Background worker daemons and OS schedulers
 - Google Places / TikTok / website extractors (interface ready)
-- AI classification
+- AI classification (normalization services are AI-ready)
 - Profile metadata extraction
 - Chrome extension
 

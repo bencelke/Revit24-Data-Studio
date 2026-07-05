@@ -14,6 +14,9 @@ export const FIRESTORE_COLLECTIONS = {
   extraction_records: "extraction_records",
   worker_logs: "worker_logs",
   instagram_profiles: "instagram_profiles",
+  normalized_records: "normalized_records",
+  entity_matches: "entity_matches",
+  normalization_logs: "normalization_logs",
 } as const;
 
 export type FirestoreCollectionName =

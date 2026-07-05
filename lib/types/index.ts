@@ -171,3 +171,34 @@ export type {
 } from "./instagram-profiles";
 
 export { INSTAGRAM_PROFILE_STATUSES } from "./instagram-profiles";
+
+export type {
+  EntityType,
+  NormalizedRecordStatus,
+  NormalizationSource,
+  MatchConfidenceLevel,
+  SocialPlatform,
+  SocialLinks,
+  AutomotiveTag,
+  RawExtractedMetadata,
+  NormalizedRecordDocument,
+  CreateNormalizedRecordInput,
+  EntityMatchDocument,
+  CreateEntityMatchInput,
+  NormalizationLogDocument,
+  CreateNormalizationLogInput,
+  NormalizationResult,
+  EntitiesDashboardStats,
+  EntitiesListData,
+  EntityDetailData,
+  PipelineDashboardStats,
+} from "./normalization";
+
+export {
+  ENTITY_TYPES,
+  NORMALIZED_RECORD_STATUSES,
+  NORMALIZATION_SOURCES,
+  MATCH_CONFIDENCE_LEVELS,
+  SOCIAL_PLATFORMS,
+  AUTOMOTIVE_TAGS,
+} from "./normalization";

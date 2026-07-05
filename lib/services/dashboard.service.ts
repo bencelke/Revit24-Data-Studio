@@ -1,148 +1,145 @@
 import type { DashboardData } from "@/lib/types";
 import {
-  getImportJobDashboardStats,
   getRecentAppLogs,
   isImportFirestoreAvailable,
 } from "@/lib/services/importJobService";
 import { formatRelativeTime } from "@/lib/services/importService";
+import { getPipelineDashboardStats } from "@/lib/services/normalizationPipeline";
 import { MOCK_MODE_WARNING } from "@/lib/errors/app-errors";
+
+const MOCK_PIPELINE_STATS = {
+  rawImports: 12,
+  extractionJobs: 5,
+  normalizedRecords: 4,
+  pendingReview: 4,
+  approved: 2,
+};
 
 const MOCK_DASHBOARD_DATA: DashboardData = {
   dataMode: "mock",
   firebaseConfigured: false,
   stats: [
     {
-      id: "total-import-jobs",
-      label: "Total Import Jobs",
-      value: "12",
+      id: "raw-imports",
+      label: "Raw Imports",
+      value: String(MOCK_PIPELINE_STATS.rawImports),
+      change: "Mock data",
+      trend: "neutral",
+    },
+    {
+      id: "extraction-jobs",
+      label: "Extraction Jobs",
+      value: String(MOCK_PIPELINE_STATS.extractionJobs),
+      change: "Mock data",
+      trend: "neutral",
+    },
+    {
+      id: "normalized-records",
+      label: "Normalized Records",
+      value: String(MOCK_PIPELINE_STATS.normalizedRecords),
       change: "Mock data",
       trend: "neutral",
     },
     {
       id: "pending-review",
       label: "Pending Review",
-      value: "2",
+      value: String(MOCK_PIPELINE_STATS.pendingReview),
       change: "Mock data",
       trend: "neutral",
     },
     {
-      id: "queued",
-      label: "Queued",
-      value: "3",
-      change: "Mock data",
-      trend: "neutral",
-    },
-    {
-      id: "running",
-      label: "Running",
-      value: "1",
-      change: "Mock data",
-      trend: "neutral",
-    },
-    {
-      id: "completed-today",
-      label: "Completed Today",
-      value: "4",
+      id: "approved",
+      label: "Approved",
+      value: String(MOCK_PIPELINE_STATS.approved),
       change: "Mock data",
       trend: "up",
-    },
-    {
-      id: "failed-today",
-      label: "Failed Today",
-      value: "1",
-      change: "Mock data",
-      trend: "down",
     },
   ],
   recentActivity: [
     {
       id: "1",
-      action: "Import batch submitted",
-      target: "Instagram profiles — Batch #284",
-      actor: "system-dev",
+      action: "Entity normalized",
+      target: "BMW Club Stuttgart",
+      actor: "normalization-pipeline",
       timestamp: "2 minutes ago",
       status: "success",
     },
     {
       id: "2",
-      action: "Record approved",
+      action: "Matches detected",
       target: "Precision Auto Detailing",
-      actor: "reviewer@revit24.com",
+      actor: "entity-matching",
       timestamp: "14 minutes ago",
-      status: "success",
+      status: "warning",
     },
     {
       id: "3",
-      action: "Duplicate flagged",
-      target: "@midnight.motors",
-      actor: "system",
+      action: "Record approved",
+      target: "Euro Drift Collective",
+      actor: "reviewer@revit24.com",
       timestamp: "32 minutes ago",
-      status: "warning",
+      status: "success",
     },
   ],
 };
 
+function buildStatsFromPipeline(pipeline: {
+  rawImports: number;
+  extractionJobs: number;
+  normalizedRecords: number;
+  pendingReview: number;
+  approved: number;
+}) {
+  return [
+    {
+      id: "raw-imports",
+      label: "Raw Imports",
+      value: String(pipeline.rawImports),
+      change: "All import jobs",
+      trend: "neutral" as const,
+    },
+    {
+      id: "extraction-jobs",
+      label: "Extraction Jobs",
+      value: String(pipeline.extractionJobs),
+      change: "Queue jobs",
+      trend: "neutral" as const,
+    },
+    {
+      id: "normalized-records",
+      label: "Normalized Records",
+      value: String(pipeline.normalizedRecords),
+      change: "Structured entities",
+      trend: "neutral" as const,
+    },
+    {
+      id: "pending-review",
+      label: "Pending Review",
+      value: String(pipeline.pendingReview),
+      change: "Awaiting approval",
+      trend: pipeline.pendingReview > 0 ? ("up" as const) : ("neutral" as const),
+    },
+    {
+      id: "approved",
+      label: "Approved",
+      value: String(pipeline.approved),
+      change: "Ready for ShiftIt",
+      trend: "up" as const,
+    },
+  ];
+}
+
 export async function getDashboardData(): Promise<DashboardData> {
   const firebaseConfigured = isImportFirestoreAvailable();
 
-  if (!firebaseConfigured) {
-    return {
-      ...MOCK_DASHBOARD_DATA,
-      warning: MOCK_MODE_WARNING,
-    };
-  }
-
   try {
-    const stats = await getImportJobDashboardStats();
-    const logs = await getRecentAppLogs(5);
+    const pipeline = await getPipelineDashboardStats();
+    const logs = firebaseConfigured ? await getRecentAppLogs(5).catch(() => []) : [];
 
     return {
-      dataMode: "firestore",
-      firebaseConfigured: true,
-      stats: [
-        {
-          id: "total-import-jobs",
-          label: "Total Import Jobs",
-          value: String(stats.totalImportJobs),
-          change: "All time",
-          trend: "neutral",
-        },
-        {
-          id: "pending-review",
-          label: "Pending Review",
-          value: String(stats.pendingReview),
-          change: "Awaiting review",
-          trend: "neutral",
-        },
-        {
-          id: "queued",
-          label: "Queued",
-          value: String(stats.queued),
-          change: "Ready to process",
-          trend: "neutral",
-        },
-        {
-          id: "running",
-          label: "Running",
-          value: String(stats.running),
-          change: "In progress",
-          trend: stats.running > 0 ? "up" : "neutral",
-        },
-        {
-          id: "completed-today",
-          label: "Completed Today",
-          value: String(stats.completedToday),
-          change: "Since midnight",
-          trend: "up",
-        },
-        {
-          id: "failed-today",
-          label: "Failed Today",
-          value: String(stats.failedToday),
-          change: "Needs attention",
-          trend: stats.failedToday > 0 ? "down" : "neutral",
-        },
-      ],
+      dataMode: firebaseConfigured ? "firestore" : "mock",
+      firebaseConfigured,
+      stats: buildStatsFromPipeline(pipeline),
       recentActivity:
         logs.length > 0
           ? logs.map((log) => ({
@@ -157,12 +154,11 @@ export async function getDashboardData(): Promise<DashboardData> {
                   : ("success" as const),
             }))
           : MOCK_DASHBOARD_DATA.recentActivity,
+      warning: firebaseConfigured ? undefined : MOCK_MODE_WARNING,
     };
   } catch {
     return {
       ...MOCK_DASHBOARD_DATA,
-      dataMode: "mock",
-      firebaseConfigured: false,
       warning: MOCK_MODE_WARNING,
     };
   }

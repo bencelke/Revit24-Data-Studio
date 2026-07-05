@@ -3,6 +3,7 @@ import {
   Upload,
   ClipboardCheck,
   ListTodo,
+  Building2,
   Settings,
 } from "lucide-react";
 import type { NavItem } from "@/lib/types";
@@ -31,6 +32,12 @@ export const mainNavItems: NavItem[] = [
     href: "/queue",
     icon: ListTodo,
     description: "Background job queue",
+  },
+  {
+    title: "Entities",
+    href: "/entities",
+    icon: Building2,
+    description: "Normalized automotive records",
   },
   {
     title: "Settings",

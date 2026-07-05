@@ -76,3 +76,28 @@ export {
   mapInstagramJobToImportJob,
   parseAndPrepareBulkInput,
 } from "./instagramProfileImportService";
+export {
+  normalizeExtractedMetadata,
+  runNormalizationPipeline,
+  normalizeInstagramProfile,
+  normalizeAllCompletedInstagramProfiles,
+  getEntitiesListData,
+  getEntityDetail,
+  getPipelineDashboardStats,
+  instagramProfileToRaw,
+} from "./normalizationPipeline";
+export { normalizeRawMetadata } from "./normalizationService";
+export { detectTags, mergeTags } from "./tagService";
+export { detectEntityType, getEntityTypeLabel } from "./entityTypeService";
+export { detectVehicleBrands, detectSpecialties } from "./brandDetectionService";
+export { normalizeLocation } from "./locationNormalizationService";
+export {
+  buildConfidenceFactors,
+  calculateConfidenceScore,
+  getConfidenceLabel,
+  getConfidenceVariant,
+} from "./confidenceService";
+export {
+  findPotentialMatches,
+  getMatchLevelLabel,
+} from "./entityMatchingService";

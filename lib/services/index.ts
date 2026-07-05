@@ -123,3 +123,27 @@ export {
   startWorkerRuntimeLoop,
   getWorkerRuntimeState,
 } from "./workerRuntimeService";
+export {
+  getBusinessDiscoveryProvider,
+  registerBusinessDiscoveryProvider,
+  defaultGooglePlacesProvider,
+} from "./googlePlacesService";
+export {
+  runPlacesSearch,
+  savePlacesSearch,
+  getPlacesSearchPageData,
+  getPlacesResultsPageData,
+  getPlaceDetailPageData,
+  getPlacesJobsPageData,
+  listAllGooglePlaces,
+} from "./placesSearchService";
+export {
+  googlePlaceToRaw,
+  normalizeGooglePlace,
+  previewNormalizedPlace,
+} from "./placesNormalizationService";
+export {
+  importSelectedPlaces,
+  importSinglePlace,
+} from "./placesImportService";
+export { findPlaceDuplicates, updatePlaceStatus } from "./placesDuplicateService";

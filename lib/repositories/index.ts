@@ -96,6 +96,29 @@ export {
 } from "./normalizationLogsRepository";
 
 export {
+  upsertGooglePlace,
+  createGooglePlaces,
+  getGooglePlace,
+  getGooglePlaceByPlaceId,
+  listGooglePlaces,
+  listGooglePlacesByJobId,
+  updateGooglePlace,
+} from "./googlePlacesRepository";
+
+export {
+  createSavedSearch,
+  listSavedSearches,
+  deleteSavedSearch,
+} from "./savedSearchRepository";
+
+export {
+  createPlacesSearchJob,
+  getPlacesSearchJob,
+  listPlacesSearchJobs,
+  updatePlacesSearchJob,
+} from "./placesSearchJobsRepository";
+
+export {
   getFirestoreDb,
   isFirestoreAvailable,
   isFirebaseConfigured,

@@ -65,6 +65,20 @@ export function compareRecords(
     score += 10;
   }
 
+  if (
+    source.latitude != null &&
+    source.longitude != null &&
+    candidate.latitude != null &&
+    candidate.longitude != null
+  ) {
+    const latDiff = Math.abs(source.latitude - candidate.latitude);
+    const lngDiff = Math.abs(source.longitude - candidate.longitude);
+    if (latDiff < 0.0005 && lngDiff < 0.0005) {
+      matchFields.push("coordinates");
+      score += 20;
+    }
+  }
+
   if (matchFields.length === 0) return null;
 
   const confidenceLevel = resolveConfidenceLevel(score);

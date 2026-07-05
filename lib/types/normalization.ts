@@ -108,6 +108,12 @@ export interface RawExtractedMetadata {
   country: string | null;
   city: string | null;
   verified: boolean;
+  state?: string | null;
+  area?: string | null;
+  postalCode?: string | null;
+  address?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
 }
 
 export interface NormalizedRecordDocument {

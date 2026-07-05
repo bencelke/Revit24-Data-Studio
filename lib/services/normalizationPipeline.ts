@@ -78,7 +78,18 @@ export function normalizeExtractedMetadata(raw: RawExtractedMetadata): CreateNor
   const vehicleBrands = detectVehicleBrands(raw);
   const allTags = mergeTags(tags, vehicleBrands);
   const specialties = detectSpecialties(raw, allTags);
-  const location = normalizeLocation(raw.bio, raw.country, raw.city);
+  const location =
+    raw.latitude != null && raw.longitude != null
+      ? {
+          country: raw.country ?? null,
+          state: raw.state ?? null,
+          city: raw.city ?? null,
+          area: raw.area ?? null,
+          address: raw.address ?? null,
+          latitude: raw.latitude,
+          longitude: raw.longitude,
+        }
+      : normalizeLocation(raw.bio, raw.country, raw.city);
 
   const confidenceScore = calculateConfidenceScore(
     buildConfidenceFactors(raw, { ...normalized, ...location }, entityType, vehicleBrands, allTags),

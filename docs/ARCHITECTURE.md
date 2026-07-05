@@ -27,6 +27,8 @@ components/
   queue/           # Extraction queue & worker management components
   workers/         # Live worker runtime UI (Phase 9)
   entities/        # Normalized entity preview components (Phase 8)
+  google-places/   # Google Places discovery UI (Phase 10)
+  maps/            # Map placeholders (Phase 10)
   auth/            # Auth UI placeholders
   ui/              # shadcn/ui primitives
 
@@ -378,6 +380,61 @@ Load next pending extraction_record
 ### ExtractionProvider Interface
 
 Runtime never depends on Instagram directly. Platform providers implement `ExtractionProvider` in `lib/types/extraction-provider.ts`. Registry at `workers/runtime/extractionProviderRegistry.ts` — future: Google Places, TikTok, YouTube, Website.
+
+## Phase 10 — Google Places Business Discovery & Import
+
+Collectors discover automotive businesses via Google Places (or mock data when API key is not configured). Results flow into the existing review and normalization pipeline — no separate business model.
+
+### Routes
+
+| Route | Purpose |
+|-------|---------|
+| `/google-places` | Discovery hub overview |
+| `/google-places/search` | Search filters — country, city, keyword, category, radius |
+| `/google-places/results` | Search results table/cards with bulk actions |
+| `/google-places/jobs` | Search job history |
+| `/google-places/[placeId]` | Business detail with map placeholder + duplicate detection |
+| `/imports/google-places` | Import Center entry (redirects to search) |
+
+### Business Discovery Flow
+
+```
+Collector configures search (SearchFilters)
+  → POST /api/google-places/search
+  → placesSearchService.runPlacesSearch()
+  → BusinessDiscoveryProvider.search() (GooglePlacesDiscoveryProvider)
+  → places_search_jobs + google_places_raw
+  → Results UI with bulk actions
+  → POST /api/google-places/import
+  → placesImportService → import_jobs + import_records (review workflow)
+  → placesNormalizationService → normalized_records (existing pipeline)
+```
+
+### Provider Interface
+
+`BusinessDiscoveryProvider` in `lib/types/business-discovery.ts` — UI and services depend on the interface, not Google directly. Future providers: OpenStreetMap, Apple Maps, TomTom, Custom Import.
+
+Implementation: `GooglePlacesDiscoveryProvider` in `googlePlacesService.ts`. Uses live Google Places Text Search API when `GOOGLE_PLACES_API_KEY` is set; otherwise generates realistic mock automotive businesses.
+
+### Collections
+
+| Collection | Purpose |
+|------------|---------|
+| `saved_searches` | Named search templates for collectors |
+| `places_search_jobs` | Search execution jobs with status and counts |
+| `google_places_raw` | Raw discovered business records |
+
+### Normalization Flow
+
+`googlePlaceToRaw()` maps `GooglePlaceRawDocument` → `RawExtractedMetadata` with structured location (lat/lng, address). Feeds existing `runNormalizationPipeline()` — same entity model as Instagram.
+
+### Duplicate Detection
+
+`placesDuplicateService` compares website, phone, coordinates, business name, city against `google_places_raw` and `normalized_records`. Confidence scoring — detect only, no merge.
+
+### Configuration
+
+`lib/config/google-places.ts` — `GOOGLE_PLACES_API_KEY`, default radius, result limit, language.
 
 ## Mock Mode
 

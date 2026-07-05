@@ -164,6 +164,34 @@ export {
 export type { LiveJobProgress } from "./runtime";
 
 export type {
+  BusinessDiscoveryProvider,
+  BusinessDiscoverySearchInput,
+  BusinessDiscoverySearchResult,
+} from "./business-discovery";
+
+export type {
+  GooglePlacesBusinessCategory,
+  PlacesSearchJobStatus,
+  GooglePlaceStatus,
+  PlacesSearchQuery,
+  SavedSearchDocument,
+  CreateSavedSearchInput,
+  PlacesSearchJobDocument,
+  GooglePlaceRawDocument,
+  PlacesDuplicateMatch,
+  PlacesSearchPageData,
+  PlacesResultsPageData,
+  PlaceDetailPageData,
+  PlacesImportResult,
+} from "./google-places";
+
+export {
+  GOOGLE_PLACES_BUSINESS_CATEGORIES,
+  PLACES_SEARCH_JOB_STATUSES,
+  GOOGLE_PLACE_STATUSES,
+} from "./google-places";
+
+export type {
   ExtractionProvider,
   JobExecutionContext,
   JobExecutionProgress,

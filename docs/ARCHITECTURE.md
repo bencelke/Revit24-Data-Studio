@@ -28,6 +28,7 @@ components/
   workers/         # Live worker runtime UI (Phase 9)
   entities/        # Normalized entity preview components (Phase 8)
   google-places/   # Google Places discovery UI (Phase 10)
+  websites/        # Website discovery UI (Phase 11)
   maps/            # Map placeholders (Phase 10)
   auth/            # Auth UI placeholders
   ui/              # shadcn/ui primitives
@@ -436,6 +437,65 @@ Implementation: `GooglePlacesDiscoveryProvider` in `googlePlacesService.ts`. Use
 
 `lib/config/google-places.ts` — `GOOGLE_PLACES_API_KEY`, default radius, result limit, language.
 
+## Phase 11 — Website Discovery & Public Metadata Import
+
+Collectors discover and import publicly available website metadata — titles, contact details, social links, and business information. No authentication bypass. Respects robots.txt when configured. Results flow into the existing review and normalization pipeline.
+
+### Routes
+
+| Route | Purpose |
+|-------|---------|
+| `/websites` | Discovery hub overview |
+| `/imports/websites` | URL paste, CSV upload, domain import, preview, job creation |
+| `/websites/jobs` | Discovery job history |
+| `/websites/results` | Extracted website results with bulk import actions |
+| `/websites/[id]` | Website detail with contacts, social links, duplicate detection |
+
+### Website Import Flow
+
+```
+Collector submits URLs (single, bulk, CSV, domain)
+  → POST /api/websites/discover
+  → websiteDiscoveryService.runWebsiteDiscoveryJob()
+  → WebsiteExtractionProvider.extract() (Mock or Live fetch — no Playwright in UI)
+  → website_jobs + website_raw
+  → Results UI with bulk actions
+  → POST /api/websites/import
+  → websiteImportService → import_jobs + import_records (review workflow)
+  → websiteNormalizationService → normalized_records (existing pipeline)
+```
+
+### Provider Interfaces
+
+- `WebsiteDiscoveryProvider` — URL validation and discovery job orchestration (`lib/types/website-discovery.ts`)
+- `WebsiteExtractionProvider` — public metadata extraction (`MockWebsiteExtractionProvider`, `LiveWebsiteExtractionProvider` in `websiteExtractionService.ts`)
+
+UI and services depend on interfaces only — not Playwright. Future worker integration via existing queue runtime and provider registry.
+
+### Metadata Extraction Pipeline
+
+1. Parse and validate URLs (single, bulk, CSV, domain)
+2. Extract public HTML metadata (title, meta description, lang)
+3. Detect emails, phones, social links from visible page content
+4. Infer business type from public text
+5. Persist to `website_raw`
+6. On import: normalize via `websiteToRaw()` → `runNormalizationPipeline()`
+
+### Collections
+
+| Collection | Purpose |
+|------------|---------|
+| `website_jobs` | Discovery execution jobs with URL counts and status |
+| `website_raw` | Extracted public website metadata |
+
+### Duplicate Detection
+
+`websiteDuplicateService` compares website URL, domain, public email, phone, and business name against `website_raw` and `normalized_records`. Confidence scoring — detect only, no merge.
+
+### Configuration
+
+`lib/config/websites.ts` — `WEBSITE_WORKER_ENABLED`, `WEBSITE_EXTRACTION_MODE`, max URLs per job, robots.txt respect flag.
+
 ## Mock Mode
 
 When Firebase is not configured:
@@ -447,8 +507,8 @@ When Firebase is not configured:
 
 ## Out of Scope (Future Phases)
 
-- Browser automation providers (Playwright, Puppeteer, Selenium) — swap via `ProfileExtractionProvider`
-- Google Places / TikTok / website extractors (ExtractionProvider registry ready)
+- Browser automation providers (Playwright, Puppeteer, Selenium) — swap via `ProfileExtractionProvider` / `WebsiteExtractionProvider`
+- TikTok / YouTube extractors (ExtractionProvider registry ready)
 - AI classification (normalization services are AI-ready)
 - Profile metadata extraction
 - Chrome extension

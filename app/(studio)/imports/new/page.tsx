@@ -37,7 +37,9 @@ export default function NewImportPage() {
                     ? "/imports/new/instagram"
                     : definition.type === "google_places"
                       ? "/google-places/search"
-                      : `/imports/new?type=${definition.type}`
+                      : definition.type === "public_website"
+                        ? "/imports/websites"
+                        : `/imports/new?type=${definition.type}`
                   : undefined
               }
             />

@@ -18,6 +18,8 @@ export const FIRESTORE_COLLECTIONS = {
   saved_searches: "saved_searches",
   places_search_jobs: "places_search_jobs",
   google_places_raw: "google_places_raw",
+  website_jobs: "website_jobs",
+  website_raw: "website_raw",
   normalized_records: "normalized_records",
   entity_matches: "entity_matches",
   normalization_logs: "normalization_logs",

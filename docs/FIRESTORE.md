@@ -18,6 +18,8 @@ Revit24 Data Studio uses Firestore for import job persistence with a repository/
 | `google_places_raw` | Raw Google Places discovery records (Phase 10)       |
 | `saved_searches`   | Saved Google Places search templates (Phase 10)      |
 | `places_search_jobs` | Google Places search execution jobs (Phase 10)     |
+| `website_jobs`       | Website discovery execution jobs (Phase 11)          |
+| `website_raw`        | Raw public website metadata records (Phase 11)       |
 | `normalized_records` | Structured automotive entities (Phase 8)           |
 | `entity_matches`     | Duplicate detection results (Phase 8)                |
 | `normalization_logs` | Normalization pipeline audit trail (Phase 8)       |

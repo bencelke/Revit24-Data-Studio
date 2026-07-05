@@ -147,3 +147,20 @@ export {
   importSinglePlace,
 } from "./placesImportService";
 export { findPlaceDuplicates, updatePlaceStatus } from "./placesDuplicateService";
+export {
+  runWebsiteDiscoveryJob,
+  createWebsiteDiscoveryJob,
+  getWebsitesHubPageData,
+  getWebsiteResultsPageData,
+  getWebsiteDetailPageData,
+  parseWebsiteInput,
+  defaultWebsiteDiscoveryProvider,
+} from "./websiteDiscoveryService";
+export { getWebsiteExtractionProvider } from "./websiteExtractionService";
+export {
+  websiteToRaw,
+  normalizeWebsite,
+  previewNormalizedWebsite,
+} from "./websiteNormalizationService";
+export { importSelectedWebsites } from "./websiteImportService";
+export { findWebsiteDuplicates } from "./websiteDuplicateService";

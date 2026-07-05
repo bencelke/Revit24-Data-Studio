@@ -5,6 +5,7 @@ import {
   ListTodo,
   Building2,
   MapPin,
+  Globe,
   Settings,
 } from "lucide-react";
 import type { NavItem } from "@/lib/types";
@@ -45,6 +46,12 @@ export const mainNavItems: NavItem[] = [
     href: "/google-places",
     icon: MapPin,
     description: "Discover automotive businesses",
+  },
+  {
+    title: "Websites",
+    href: "/websites",
+    icon: Globe,
+    description: "Discover public website metadata",
   },
   {
     title: "Settings",

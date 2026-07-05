@@ -13,3 +13,6 @@ export { ImportPreviewSummary } from "./ImportPreviewSummary";
 export { InstagramBulkImportClient } from "./InstagramBulkImportClient";
 export { DiscoveryTargetCard } from "./DiscoveryTargetCard";
 export { DiscoveryTargetTable } from "./DiscoveryTargetTable";
+export { DataModeBadge, FirestoreStatusBanner } from "./DataModeBadge";
+export { InstagramImportRecordsTable } from "./InstagramImportRecordsTable";
+export { InstagramImportDetailView } from "./InstagramImportDetailView";

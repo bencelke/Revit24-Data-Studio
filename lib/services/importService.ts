@@ -87,12 +87,19 @@ export function getRecentImportJobs(limit = 6): ImportJob[] {
 export function getImportJobs(
   params: ImportFilterParams = {},
 ): ImportListResult {
+  return applyImportJobFilters(MOCK_IMPORT_JOBS, params);
+}
+
+export function applyImportJobFilters(
+  jobs: ImportJob[],
+  params: ImportFilterParams = {},
+): ImportListResult {
   const page = params.page ?? 1;
   const pageSize = params.pageSize ?? DEFAULT_PAGE_SIZE;
   const sortField = params.sortField ?? "createdAt";
   const sortDirection = params.sortDirection ?? "desc";
 
-  const filtered = filterJobs(MOCK_IMPORT_JOBS, params);
+  const filtered = filterJobs(jobs, params);
   const sorted = sortJobs(filtered, sortField, sortDirection);
   const total = sorted.length;
   const totalPages = Math.max(1, Math.ceil(total / pageSize));

@@ -1,3 +1,8 @@
+import type {
+  InstagramProfileBulkParseResult,
+  InstagramProfileInput,
+} from "@/lib/types/instagram-imports";
+
 const INSTAGRAM_HOST_PATTERN = /(?:^|\.)instagram\.com/i;
 
 const REJECTED_PATH_PREFIXES = new Set([
@@ -204,11 +209,6 @@ export function normalizeInstagramInput(input: string): NormalizedInstagramInput
     error: null,
   };
 }
-
-import type {
-  InstagramProfileBulkParseResult,
-  InstagramProfileInput,
-} from "@/lib/types/instagram-imports";
 
 export function parseInstagramBulkInput(text: string): InstagramProfileBulkParseResult {
   const lines = text.split(/\r?\n/);

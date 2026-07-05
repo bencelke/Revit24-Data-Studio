@@ -118,6 +118,9 @@ export type {
   DiscoveryPlatform,
   DiscoveryQueryType,
   DiscoveryTargetStatus,
+  ImportDataMode,
+  CreateInstagramImportJobResult,
+  ImportHistoryData,
 } from "./instagram-imports";
 
 export {

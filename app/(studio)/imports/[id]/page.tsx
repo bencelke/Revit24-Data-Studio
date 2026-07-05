@@ -14,6 +14,7 @@ import {
   ImportJobHeader,
   ImportSummaryCard,
   ImportTimeline,
+  InstagramImportDetailView,
 } from "@/components/imports";
 import {
   Card,
@@ -22,7 +23,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { isFirebaseConfigured } from "@/lib/firebase/config";
 import { getImportJobById } from "@/lib/services/importService";
+import { getInstagramProfileImportJobWithRecords } from "@/lib/services/instagramProfileImportService";
 
 interface ImportDetailPageProps {
   params: Promise<{ id: string }>;
@@ -32,10 +35,11 @@ export async function generateMetadata({
   params,
 }: ImportDetailPageProps): Promise<Metadata> {
   const { id } = await params;
-  const job = getImportJobById(id);
+  const instagramJob = await getInstagramProfileImportJobWithRecords(id);
+  const mockJob = instagramJob ? null : getImportJobById(id);
 
   return {
-    title: job ? job.name : "Import Not Found",
+    title: instagramJob?.name ?? mockJob?.name ?? "Import Not Found",
   };
 }
 
@@ -43,6 +47,24 @@ export default async function ImportDetailPage({
   params,
 }: ImportDetailPageProps) {
   const { id } = await params;
+  const firebaseConfigured = isFirebaseConfigured();
+  const instagramJob = await getInstagramProfileImportJobWithRecords(id);
+
+  if (instagramJob) {
+    return (
+      <AppShell
+        title="Import Details"
+        description={`Job ${instagramJob.id}`}
+      >
+        <InstagramImportDetailView
+          job={instagramJob}
+          dataMode={firebaseConfigured ? "firestore" : "mock"}
+          firebaseConfigured={firebaseConfigured}
+        />
+      </AppShell>
+    );
+  }
+
   const job = getImportJobById(id);
 
   if (!job) {

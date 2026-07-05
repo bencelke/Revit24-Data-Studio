@@ -32,6 +32,7 @@ export interface InstagramProfileImportRecord {
   error: string | null;
   duplicateOf: string | null;
   createdAt: string;
+  updatedAt: string;
 }
 
 export interface InstagramProfileImportJob {
@@ -42,11 +43,28 @@ export interface InstagramProfileImportJob {
   status: "draft" | "queued";
   createdBy: string;
   createdAt: string;
+  updatedAt: string;
   totalRecords: number;
   validRecords: number;
   duplicateRecords: number;
   invalidRecords: number;
+  notes: string | null;
+  records?: InstagramProfileImportRecord[];
+}
+
+export type ImportDataMode = "firestore" | "mock";
+
+export interface CreateInstagramImportJobResult {
+  job: InstagramProfileImportJob;
   records: InstagramProfileImportRecord[];
+  dataMode: ImportDataMode;
+  warning?: string;
+}
+
+export interface ImportHistoryData {
+  jobs: import("./imports").ImportJob[];
+  dataMode: ImportDataMode;
+  firebaseConfigured: boolean;
 }
 
 export const DISCOVERY_PLATFORMS = [

@@ -44,6 +44,9 @@ export type {
   DiscoveryPlatform,
   DiscoveryQueryType,
   DiscoveryTargetStatus,
+  ImportDataMode,
+  CreateInstagramImportJobResult,
+  ImportHistoryData,
 } from "./imports";
 
 export {

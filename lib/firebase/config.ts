@@ -6,6 +6,8 @@ export const FIRESTORE_COLLECTIONS = {
   users: "users",
   logs: "logs",
   jobs: "jobs",
+  import_jobs: "import_jobs",
+  import_records: "import_records",
 } as const;
 
 export type FirestoreCollectionName =

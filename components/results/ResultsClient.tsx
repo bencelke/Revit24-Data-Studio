@@ -11,6 +11,12 @@ import { ResultsActions } from "./ResultsActions";
 import { ResultsSummaryCards } from "./ResultsSummaryCards";
 import { buildInstagramExtractionCsv, downloadCsv } from "@/lib/utils/csvExport";
 import {
+  buildInstagramJsonExportFilename,
+  downloadJsonFile,
+  exportInstagramResultsToJson,
+  type InstagramJsonExportRecord,
+} from "@/lib/utils/jsonExport";
+import {
   clearExtractionResults,
   deleteExtractionResult,
   listExtractionResultsSync,
@@ -95,6 +101,34 @@ function buildUploadStatuses(
   return next;
 }
 
+function mapRowToJsonExportRecord(row: InstagramResultsViewRow): InstagramJsonExportRecord {
+  const status =
+    row.status === "success" || row.status === "completed"
+      ? "completed"
+      : row.status === "mock"
+        ? "mock"
+        : row.status;
+
+  return {
+    source: "instagram",
+    username: row.username,
+    profileUrl: row.profileUrl,
+    displayName: row.displayName,
+    profileImageUrl: row.profileImageUrl,
+    bio: null,
+    website: row.website,
+    publicEmail: row.publicEmail,
+    status,
+    errorCode: row.errorCode,
+    errorMessage: row.errorMessage,
+    extractedAt: row.extractedAt ?? new Date().toISOString(),
+  };
+}
+
+function getExtractedRows(rows: InstagramResultsViewRow[]): InstagramResultsViewRow[] {
+  return rows.filter((row) => row.extractionId);
+}
+
 export function ResultsClient({
   firebaseConnected,
   storageMode,
@@ -145,7 +179,9 @@ export function ResultsClient({
   }, [loadResults]);
 
   const visibleRows = mounted ? rows : [];
+  const extractedRows = getExtractedRows(visibleRows);
   const hasResults = visibleRows.length > 0;
+  const hasExtractedRecords = extractedRows.length > 0;
   const uploadableRecords = visibleRows
     .map(toUploadableExtraction)
     .filter((row): row is ExtractedInstagramProfile => row != null);
@@ -165,34 +201,39 @@ export function ResultsClient({
   }
 
   function handleExportCsv() {
-    if (!hasResults) return;
-    const csvRows = visibleRows
-      .filter((row) => row.extractionId)
-      .map((row) => ({
-        id: row.extractionId as string,
-        source: "instagram" as const,
-        username: row.username,
-        profileUrl: row.profileUrl,
-        profileImageUrl: row.profileImageUrl,
-        displayName: row.displayName,
-        bio: null,
-        website: row.website,
-        publicEmail: row.publicEmail,
-        status:
-          row.status === "success" || row.status === "completed"
-            ? ("completed" as const)
-            : row.status === "mock"
-              ? ("mock" as const)
-              : ("failed" as const),
-        error: row.errorMessage,
-        errorCode: row.errorCode,
-        errorMessage: row.errorMessage,
-        extractedAt: row.extractedAt ?? new Date().toISOString(),
-        createdAt: row.extractedAt ?? new Date().toISOString(),
-        updatedAt: row.extractedAt ?? new Date().toISOString(),
-      }));
+    if (!hasExtractedRecords) return;
+    const csvRows = extractedRows.map((row) => ({
+      id: row.extractionId as string,
+      source: "instagram" as const,
+      username: row.username,
+      profileUrl: row.profileUrl,
+      profileImageUrl: row.profileImageUrl,
+      displayName: row.displayName,
+      bio: null,
+      website: row.website,
+      publicEmail: row.publicEmail,
+      status:
+        row.status === "success" || row.status === "completed"
+          ? ("completed" as const)
+          : row.status === "mock"
+            ? ("mock" as const)
+            : ("failed" as const),
+      error: row.errorMessage,
+      errorCode: row.errorCode,
+      errorMessage: row.errorMessage,
+      extractedAt: row.extractedAt ?? new Date().toISOString(),
+      createdAt: row.extractedAt ?? new Date().toISOString(),
+      updatedAt: row.extractedAt ?? new Date().toISOString(),
+    }));
     const csv = buildInstagramExtractionCsv(csvRows);
     downloadCsv(`revit24-instagram-${new Date().toISOString().slice(0, 10)}.csv`, csv);
+  }
+
+  function handleExportJson() {
+    if (!hasExtractedRecords) return;
+    const records = extractedRows.map(mapRowToJsonExportRecord);
+    const json = exportInstagramResultsToJson(records);
+    downloadJsonFile(json, buildInstagramJsonExportFilename());
   }
 
   async function handleUploadToRevit24() {
@@ -342,11 +383,13 @@ export function ResultsClient({
 
       <ResultsActions
         hasResults={hasResults}
+        hasExtractedRecords={hasExtractedRecords}
         hasUploadableRecords={hasUploadableRecords}
         firebaseConnected={firebaseConnected}
         isClearing={isClearing}
         isUploading={isUploading}
         onExportCsv={handleExportCsv}
+        onExportJson={handleExportJson}
         onUploadToRevit24={() => void handleUploadToRevit24()}
         onClear={handleClear}
       />

@@ -1,26 +1,30 @@
 "use client";
 
-import { Download, Send, Trash2 } from "lucide-react";
+import { Download, FileJson, Send, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface ResultsActionsProps {
   hasResults: boolean;
+  hasExtractedRecords: boolean;
   hasUploadableRecords: boolean;
   firebaseConnected: boolean;
   isClearing?: boolean;
   isUploading?: boolean;
   onExportCsv: () => void;
+  onExportJson: () => void;
   onUploadToRevit24: () => void;
   onClear: () => void;
 }
 
 export function ResultsActions({
   hasResults,
+  hasExtractedRecords,
   hasUploadableRecords,
   firebaseConnected,
   isClearing,
   isUploading,
   onExportCsv,
+  onExportJson,
   onUploadToRevit24,
   onClear,
 }: ResultsActionsProps) {
@@ -28,9 +32,13 @@ export function ResultsActions({
 
   return (
     <div className="flex flex-wrap gap-2">
-      <Button variant="secondary" onClick={onExportCsv} disabled={!hasResults}>
+      <Button variant="secondary" onClick={onExportCsv} disabled={!hasExtractedRecords}>
         <Download className="mr-2 size-4" />
         Export CSV
+      </Button>
+      <Button variant="secondary" onClick={onExportJson} disabled={!hasExtractedRecords}>
+        <FileJson className="mr-2 size-4" />
+        Export JSON
       </Button>
       <Button
         variant="secondary"

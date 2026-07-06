@@ -13,12 +13,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ProfileAvatar } from "./ProfileAvatar";
-import type { UploadStatus } from "@/lib/types/instagramExtraction";
+import { formatInstagramEntityType } from "@/lib/utils/instagramEntityType";
 import type { InstagramResultsViewRow } from "@/lib/types/instagramExtractionQueue";
 
 interface InstagramResultsTableProps {
   rows: InstagramResultsViewRow[];
-  uploadStatuses: Record<string, UploadStatus>;
   onRemove: (id: string, extractionId: string | null) => void;
 }
 
@@ -38,37 +37,6 @@ function formatExtractedAt(iso: string | null): string {
   return `${year}-${month}-${day} ${hour}:${minute} UTC`;
 }
 
-function getUploadStatus(row: InstagramResultsViewRow, uploadStatuses: Record<string, UploadStatus>): UploadStatus {
-  if (uploadStatuses[row.id]) {
-    return uploadStatuses[row.id];
-  }
-  if (row.status === "failed") {
-    return "failed";
-  }
-  return "not_uploaded";
-}
-
-function uploadStatusLabel(status: UploadStatus): string {
-  switch (status) {
-    case "uploaded":
-      return "Uploaded";
-    case "duplicate":
-      return "Duplicate";
-    case "failed":
-      return "Failed";
-    default:
-      return "Not uploaded";
-  }
-}
-
-function UploadStatusBadge({ status }: { status: UploadStatus }) {
-  if (status === "failed") {
-    return <Badge variant="destructive">{uploadStatusLabel(status)}</Badge>;
-  }
-
-  return <Badge variant="outline">{uploadStatusLabel(status)}</Badge>;
-}
-
 function StatusBadge({ status }: { status: string }) {
   if (status === "failed") {
     return <Badge variant="destructive">{status}</Badge>;
@@ -85,7 +53,11 @@ function StatusBadge({ status }: { status: string }) {
   return <Badge variant="outline">{status}</Badge>;
 }
 
-export function InstagramResultsTable({ rows, uploadStatuses, onRemove }: InstagramResultsTableProps) {
+function EntityTypeBadge({ entityType }: { entityType: InstagramResultsViewRow["entityType"] }) {
+  return <Badge variant="outline">{formatInstagramEntityType(entityType)}</Badge>;
+}
+
+export function InstagramResultsTable({ rows, onRemove }: InstagramResultsTableProps) {
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   async function handleCopy(id: string, value: string) {
@@ -97,7 +69,7 @@ export function InstagramResultsTable({ rows, uploadStatuses, onRemove }: Instag
   if (rows.length === 0) {
     return (
       <div className="rounded-lg border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
-        No results yet. Create an extraction job from Instagram Extractor first.
+        No results match the current filter.
       </div>
     );
   }
@@ -110,10 +82,10 @@ export function InstagramResultsTable({ rows, uploadStatuses, onRemove }: Instag
             <TableHead className="w-12" />
             <TableHead>Username</TableHead>
             <TableHead>Display Name</TableHead>
+            <TableHead>Entity Type</TableHead>
             <TableHead>Public Email</TableHead>
             <TableHead>Website</TableHead>
             <TableHead>Status</TableHead>
-            <TableHead>Upload Status</TableHead>
             <TableHead>Error</TableHead>
             <TableHead>Extracted At</TableHead>
             <TableHead className="text-right">Actions</TableHead>
@@ -127,13 +99,13 @@ export function InstagramResultsTable({ rows, uploadStatuses, onRemove }: Instag
               </TableCell>
               <TableCell className="font-medium">@{row.username}</TableCell>
               <TableCell>{row.displayName ?? "—"}</TableCell>
+              <TableCell>
+                <EntityTypeBadge entityType={row.entityType} />
+              </TableCell>
               <TableCell>{row.publicEmail ?? "—"}</TableCell>
               <TableCell className="max-w-[140px] truncate">{row.website ?? "—"}</TableCell>
               <TableCell>
                 <StatusBadge status={row.status} />
-              </TableCell>
-              <TableCell>
-                <UploadStatusBadge status={getUploadStatus(row, uploadStatuses)} />
               </TableCell>
               <TableCell className="max-w-[260px] text-sm text-muted-foreground">
                 {row.errorCode ? (

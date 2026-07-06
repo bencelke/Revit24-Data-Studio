@@ -15,23 +15,43 @@ import { isoToTimestamp, timestampToIso } from "@/lib/firebase/timestamps";
 import { FirestoreNotConfiguredError } from "@/lib/errors/app-errors";
 import { mockInstagramExtractionsStore } from "@/lib/mock-data/instagramExtractionsStore";
 import { getFirestoreDb, isFirestoreAvailable } from "@/lib/repositories/firestore-client";
+import { detectInstagramEntityType } from "@/lib/utils/instagramEntityType";
 import type {
   CreateInstagramExtractionInput,
   ExtractionStatus,
+  InstagramEntityType,
   InstagramExtractionDocument,
 } from "@/lib/types/instagramExtraction";
 
 const BATCH_LIMIT = 499;
 
+function resolveEntityType(
+  data: DocumentData,
+  username: string,
+  displayName: string | null,
+  bio: string | null,
+): InstagramEntityType {
+  if (data.entityType === "club" || data.entityType === "member" || data.entityType === "unknown") {
+    return data.entityType;
+  }
+
+  return detectInstagramEntityType({ username, displayName, bio });
+}
+
 function mapExtractionDoc(id: string, data: DocumentData): InstagramExtractionDocument {
+  const username = String(data.username ?? "");
+  const displayName = data.displayName != null ? String(data.displayName) : null;
+  const bio = data.bio != null ? String(data.bio) : null;
+
   return {
     id,
     source: "instagram",
-    username: String(data.username ?? ""),
+    entityType: resolveEntityType(data, username, displayName, bio),
+    username,
     profileUrl: String(data.profileUrl ?? ""),
     profileImageUrl: data.profileImageUrl != null ? String(data.profileImageUrl) : null,
-    displayName: data.displayName != null ? String(data.displayName) : null,
-    bio: data.bio != null ? String(data.bio) : null,
+    displayName,
+    bio,
     website: data.website != null ? String(data.website) : null,
     publicEmail: data.publicEmail != null ? String(data.publicEmail) : null,
     status: (data.status as ExtractionStatus) ?? "completed",
@@ -52,6 +72,7 @@ function mapExtractionDoc(id: string, data: DocumentData): InstagramExtractionDo
 function buildPayload(input: CreateInstagramExtractionInput) {
   return {
     source: input.source,
+    entityType: input.entityType,
     username: input.username,
     profileUrl: input.profileUrl,
     profileImageUrl: input.profileImageUrl,
@@ -79,6 +100,7 @@ async function upsertExtractionResultFirestore(
     const ref = doc(db, FIRESTORE_COLLECTIONS.instagram_extractions, existing.id);
     const updatePayload = {
       source: input.source,
+      entityType: input.entityType,
       username: input.username,
       profileUrl: input.profileUrl,
       profileImageUrl: input.profileImageUrl,

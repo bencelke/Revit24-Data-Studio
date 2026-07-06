@@ -9,11 +9,12 @@ import { FirestoreStatusBanner } from "@/components/imports/DataModeBadge";
 import { InstagramResultsTable } from "./InstagramResultsTable";
 import { ResultsActions } from "./ResultsActions";
 import { ResultsSummaryCards } from "./ResultsSummaryCards";
+import { applyResultsFilter, ResultsFilters, type ResultsFilter } from "./ResultsFilters";
 import { buildInstagramExtractionCsv, downloadCsv } from "@/lib/utils/csvExport";
 import {
-  buildInstagramJsonExportFilename,
+  buildInstagramProfilesJsonFilename,
   downloadJsonFile,
-  exportInstagramResultsToJson,
+  exportInstagramProfilesToJson,
   type InstagramJsonExportRecord,
 } from "@/lib/utils/jsonExport";
 import {
@@ -28,9 +29,8 @@ import {
   mergeResultsView,
 } from "@/lib/services/instagramExtractionQueueService";
 import { MOCK_MODE_WARNING, getErrorMessage } from "@/lib/errors/app-errors";
-import type { ExtractedInstagramProfile, ExtractorPageData, UploadStatus } from "@/lib/types/instagramExtraction";
+import type { ExtractedInstagramProfile, ExtractorPageData } from "@/lib/types/instagramExtraction";
 import type { InstagramResultsSummary, InstagramResultsViewRow } from "@/lib/types/instagramExtractionQueue";
-import type { UploadToRevit24ImportQueueResult } from "@/lib/types/simpleInstagramImport";
 
 interface ResultsClientProps extends ExtractorPageData {
   initialResults: ExtractedInstagramProfile[];
@@ -43,84 +43,25 @@ const EMPTY_SUMMARY: InstagramResultsSummary = {
   failed: 0,
 };
 
-function isUploadable(row: InstagramResultsViewRow): boolean {
-  return row.status === "success" || row.status === "completed" || row.status === "mock";
-}
-
-function toUploadableExtraction(row: InstagramResultsViewRow): ExtractedInstagramProfile | null {
-  if (!isUploadable(row) || !row.extractionId) {
-    return null;
-  }
-
-  return {
-    id: row.extractionId,
-    source: "instagram",
-    username: row.username,
-    profileUrl: row.profileUrl,
-    profileImageUrl: row.profileImageUrl,
-    displayName: row.displayName,
-    bio: null,
-    website: row.website,
-    publicEmail: row.publicEmail,
-    status: row.status === "mock" ? "mock" : "completed",
-    error: row.errorMessage,
-    errorCode: row.errorCode,
-    errorMessage: row.errorMessage,
-    extractedAt: row.extractedAt ?? new Date().toISOString(),
-    createdAt: row.extractedAt ?? new Date().toISOString(),
-    updatedAt: row.extractedAt ?? new Date().toISOString(),
-  };
-}
-
-function buildUploadStatuses(
-  rows: InstagramResultsViewRow[],
-  result: UploadToRevit24ImportQueueResult,
-  previous: Record<string, UploadStatus>,
-): Record<string, UploadStatus> {
-  const next = { ...previous };
-  const uploaded = new Set(result.uploadedUsernames.map((username) => username.toLowerCase()));
-  const duplicates = new Set(result.duplicateUsernames.map((username) => username.toLowerCase()));
-
-  for (const row of rows) {
-    const key = row.username.toLowerCase();
-    if (row.status === "failed") {
-      next[row.id] = "failed";
-      continue;
-    }
-
-    if (uploaded.has(key)) {
-      next[row.id] = "uploaded";
-      continue;
-    }
-
-    if (duplicates.has(key)) {
-      next[row.id] = "duplicate";
-    }
-  }
-
-  return next;
-}
-
 function mapRowToJsonExportRecord(row: InstagramResultsViewRow): InstagramJsonExportRecord {
   const status =
-    row.status === "success" || row.status === "completed"
-      ? "completed"
-      : row.status === "mock"
-        ? "mock"
-        : row.status;
+    row.status === "success" || row.status === "completed" || row.status === "mock"
+      ? "success"
+      : row.status;
 
   return {
     source: "instagram",
+    entityType: row.entityType,
     username: row.username,
     profileUrl: row.profileUrl,
     displayName: row.displayName,
     profileImageUrl: row.profileImageUrl,
-    bio: null,
+    bio: row.bio,
     website: row.website,
     publicEmail: row.publicEmail,
     status,
-    errorCode: row.errorCode,
-    errorMessage: row.errorMessage,
+    errorCode: row.errorCode ?? "",
+    errorMessage: row.errorMessage ?? "",
     extractedAt: row.extractedAt ?? new Date().toISOString(),
   };
 }
@@ -132,17 +73,14 @@ function getExtractedRows(rows: InstagramResultsViewRow[]): InstagramResultsView
 export function ResultsClient({
   firebaseConnected,
   storageMode,
-  extractorMode,
 }: ResultsClientProps) {
   const [rows, setRows] = useState<InstagramResultsViewRow[]>([]);
   const [summary, setSummary] = useState<InstagramResultsSummary>(EMPTY_SUMMARY);
+  const [filter, setFilter] = useState<ResultsFilter>("all");
   const [mounted, setMounted] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [uploadSummary, setUploadSummary] = useState<UploadToRevit24ImportQueueResult | null>(null);
-  const [uploadStatuses, setUploadStatuses] = useState<Record<string, UploadStatus>>({});
 
   const loadResults = useCallback(async () => {
     if (usesLocalStorage()) {
@@ -179,13 +117,10 @@ export function ResultsClient({
   }, [loadResults]);
 
   const visibleRows = mounted ? rows : [];
+  const filteredRows = applyResultsFilter(visibleRows, filter);
   const extractedRows = getExtractedRows(visibleRows);
   const hasResults = visibleRows.length > 0;
   const hasExtractedRecords = extractedRows.length > 0;
-  const uploadableRecords = visibleRows
-    .map(toUploadableExtraction)
-    .filter((row): row is ExtractedInstagramProfile => row != null);
-  const hasUploadableRecords = uploadableRecords.length > 0;
 
   async function handleRefresh() {
     setIsRefreshing(true);
@@ -205,11 +140,12 @@ export function ResultsClient({
     const csvRows = extractedRows.map((row) => ({
       id: row.extractionId as string,
       source: "instagram" as const,
+      entityType: row.entityType,
       username: row.username,
       profileUrl: row.profileUrl,
       profileImageUrl: row.profileImageUrl,
       displayName: row.displayName,
-      bio: null,
+      bio: row.bio,
       website: row.website,
       publicEmail: row.publicEmail,
       status:
@@ -232,49 +168,19 @@ export function ResultsClient({
   function handleExportJson() {
     if (!hasExtractedRecords) return;
     const records = extractedRows.map(mapRowToJsonExportRecord);
-    const json = exportInstagramResultsToJson(records);
-    downloadJsonFile(json, buildInstagramJsonExportFilename());
-  }
-
-  async function handleUploadToRevit24() {
-    setIsUploading(true);
-    setError(null);
-    setUploadSummary(null);
-
-    try {
-      const response = await fetch("/api/instagram-import/queue", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ records: uploadableRecords }),
-      });
-      const payload = (await response.json()) as UploadToRevit24ImportQueueResult & {
-        error?: string;
-      };
-
-      if (!response.ok) {
-        throw new Error(payload.error ?? "Failed to upload to Revit24.");
-      }
-
-      setUploadSummary(payload);
-      setUploadStatuses((current) => buildUploadStatuses(visibleRows, payload, current));
-    } catch (uploadError) {
-      setError(getErrorMessage(uploadError));
-    } finally {
-      setIsUploading(false);
-    }
+    const json = exportInstagramProfilesToJson(records);
+    downloadJsonFile(json, buildInstagramProfilesJsonFilename());
   }
 
   async function handleClear() {
     setIsClearing(true);
     setError(null);
-    setUploadSummary(null);
 
     try {
       if (usesLocalStorage()) {
         await clearExtractionResults();
         setRows([]);
         setSummary(EMPTY_SUMMARY);
-        setUploadStatuses({});
         return;
       }
 
@@ -289,7 +195,6 @@ export function ResultsClient({
 
       setRows([]);
       setSummary(EMPTY_SUMMARY);
-      setUploadStatuses({});
     } catch (clearError) {
       setError(getErrorMessage(clearError));
     } finally {
@@ -311,11 +216,6 @@ export function ResultsClient({
           throw new Error("Result not found.");
         }
         await loadResults();
-        setUploadStatuses((current) => {
-          const next = { ...current };
-          delete next[id];
-          return next;
-        });
         return;
       }
 
@@ -329,11 +229,6 @@ export function ResultsClient({
       }
 
       await loadResults();
-      setUploadStatuses((current) => {
-        const next = { ...current };
-        delete next[id];
-        return next;
-      });
     } catch (deleteError) {
       setError(getErrorMessage(deleteError));
     }
@@ -346,9 +241,7 @@ export function ResultsClient({
           <Badge variant={storageMode === "live" ? "default" : "outline"}>
             {storageMode === "live" ? "Firebase Live Mode" : "Mock localStorage"}
           </Badge>
-          <Badge variant={extractorMode === "live" ? "default" : "outline"}>
-            Local worker extraction
-          </Badge>
+          <Badge variant="outline">Local worker extraction</Badge>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={() => void handleRefresh()} disabled={isRefreshing}>
@@ -365,7 +258,7 @@ export function ResultsClient({
         <FirestoreStatusBanner
           variant="warning"
           title="Mock Mode"
-          description={`${MOCK_MODE_WARNING} Results are stored in browser localStorage. Configure Firebase env vars in Vercel to enable Upload to Revit24.`}
+          description={`${MOCK_MODE_WARNING} Results are stored in browser localStorage.`}
         />
       ) : (
         <FirestoreStatusBanner
@@ -373,7 +266,7 @@ export function ResultsClient({
           title="Firebase Connected"
           description={
             firebaseConnected
-              ? "Shows queued jobs and extracted profiles from Firestore. Run npm run worker:instagram locally to process pending jobs."
+              ? "Queue jobs in Firestore, run npm run worker:instagram locally, then export JSON for Revit24.com."
               : undefined
           }
         />
@@ -382,30 +275,15 @@ export function ResultsClient({
       <ResultsSummaryCards summary={summary} />
 
       <ResultsActions
-        hasResults={hasResults}
         hasExtractedRecords={hasExtractedRecords}
-        hasUploadableRecords={hasUploadableRecords}
-        firebaseConnected={firebaseConnected}
+        hasResults={hasResults}
         isClearing={isClearing}
-        isUploading={isUploading}
         onExportCsv={handleExportCsv}
         onExportJson={handleExportJson}
-        onUploadToRevit24={() => void handleUploadToRevit24()}
         onClear={handleClear}
       />
 
-      {uploadSummary ? (
-        <div className="rounded-lg border border-border bg-muted/30 px-4 py-3 text-sm">
-          <p className="font-medium">Upload summary</p>
-          <p className="mt-1 text-muted-foreground">
-            Uploaded: {uploadSummary.uploadedCount} · Duplicates skipped:{" "}
-            {uploadSummary.skippedDuplicateCount} · Failed extractions skipped: {uploadSummary.failedCount}
-          </p>
-          {uploadSummary.errors.length > 0 ? (
-            <p className="mt-1 text-destructive">{uploadSummary.errors.join(" ")}</p>
-          ) : null}
-        </div>
-      ) : null}
+      <ResultsFilters value={filter} onChange={setFilter} />
 
       {error ? (
         <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
@@ -414,8 +292,7 @@ export function ResultsClient({
       ) : null}
 
       <InstagramResultsTable
-        rows={visibleRows}
-        uploadStatuses={uploadStatuses}
+        rows={filteredRows}
         onRemove={(id, extractionId) => void handleRemove(id, extractionId)}
       />
     </div>

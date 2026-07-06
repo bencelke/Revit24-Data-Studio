@@ -147,6 +147,7 @@ export async function upsertExtractionResult(
   const record: InstagramExtractionDocument = {
     ...input,
     id: `ig_ext_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+    entityType: input.entityType ?? "unknown",
   };
 
   if (typeof window === "undefined") {

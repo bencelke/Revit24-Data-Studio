@@ -60,11 +60,11 @@ export function ExtractorSettingsPanel({ settings }: ExtractorSettingsPanelProps
           <CardDescription>Queued on Vercel, processed by local worker</CardDescription>
         </CardHeader>
         <CardContent className="space-y-0">
-          <Row label="Queue collection" value="instagram_extraction_queue" />
-          <Row label="Results collection" value="instagram_extractions" />
+          <Row label="Storage mode" value={storageLabel} />
+          <Row label="Extraction mode" value="Local worker" />
+          <Row label="Pending queue" value={String(settings.pendingQueueCount)} />
+          <Row label="Results count" value={String(settings.resultsCount)} />
           <Row label="Worker command" value="npm run worker:instagram" />
-          <Row label="Worker delay" value={`${settings.workerDelayMs} ms`} />
-          <Row label="Worker max retries" value={String(settings.workerMaxRetries)} />
           <div className="pt-4">
             <Badge variant="outline">Local worker extraction</Badge>
           </div>

@@ -10,7 +10,7 @@ function escapeCsvValue(value: string | null | undefined): string {
 
 export function buildInstagramExtractionCsv(rows: ExtractedInstagramProfile[]): string {
   const header =
-    "username,profileUrl,profileImageUrl,displayName,bio,website,publicEmail,status,errorCode,errorMessage,error,extractedAt";
+    "username,profileUrl,profileImageUrl,displayName,entityType,bio,website,publicEmail,status,errorCode,errorMessage,error,extractedAt";
 
   const lines = rows.map((row) =>
     [
@@ -18,6 +18,7 @@ export function buildInstagramExtractionCsv(rows: ExtractedInstagramProfile[]): 
       escapeCsvValue(row.profileUrl),
       escapeCsvValue(row.profileImageUrl),
       escapeCsvValue(row.displayName),
+      escapeCsvValue(row.entityType),
       escapeCsvValue(row.bio),
       escapeCsvValue(row.website),
       escapeCsvValue(row.publicEmail),
@@ -52,6 +53,7 @@ export function buildSimpleInstagramCsv(
     return {
       id: `legacy_${index}`,
       source: "instagram" as const,
+      entityType: "unknown" as const,
       username: row.username,
       profileUrl: row.profileUrl,
       profileImageUrl: row.profileImageUrl,

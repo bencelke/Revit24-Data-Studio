@@ -9,6 +9,9 @@ export type UploadStatus = (typeof UPLOAD_STATUSES)[number];
 export type ExtractorMode = "live" | "mock";
 export type StorageMode = "live" | "mock";
 
+export const INSTAGRAM_ENTITY_TYPES = ["club", "member", "unknown"] as const;
+export type InstagramEntityType = (typeof INSTAGRAM_ENTITY_TYPES)[number];
+
 export interface ParsedInstagramRow {
   lineNumber: number;
   originalInput: string;
@@ -29,6 +32,7 @@ export interface InstagramParseSummary {
 export interface InstagramExtractionDocument {
   id: string;
   source: "instagram";
+  entityType: InstagramEntityType;
   username: string;
   profileUrl: string;
   profileImageUrl: string | null;
@@ -123,6 +127,8 @@ export interface ExtractorSettingsData {
   extractionMaxRetries: number;
   workerDelayMs: number;
   workerMaxRetries: number;
+  pendingQueueCount: number;
+  resultsCount: number;
   importQueueCollection: string;
   deployment: string;
 }

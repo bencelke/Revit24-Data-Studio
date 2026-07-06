@@ -28,6 +28,7 @@ export function buildInstagramSimpleImportCsv(
     return {
       id: "legacy",
       source: "instagram" as const,
+      entityType: "unknown" as const,
       username: row.username,
       profileUrl: row.profileUrl,
       displayName: row.displayName,

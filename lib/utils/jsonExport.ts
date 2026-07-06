@@ -1,5 +1,8 @@
+import type { InstagramEntityType } from "@/lib/types/instagramExtraction";
+
 export interface InstagramJsonExportRecord {
   source: "instagram";
+  entityType: InstagramEntityType;
   username: string;
   profileUrl: string;
   displayName: string | null;
@@ -23,7 +26,7 @@ export interface InstagramJsonExportPayload {
 
 export const INSTAGRAM_JSON_EXPORT_VERSION = "1.0" as const;
 
-export function createInstagramExportPayload(
+export function createInstagramJsonExportPayload(
   records: InstagramJsonExportRecord[],
 ): InstagramJsonExportPayload {
   return {
@@ -35,16 +38,25 @@ export function createInstagramExportPayload(
   };
 }
 
-export function exportInstagramResultsToJson(records: InstagramJsonExportRecord[]): string {
-  return JSON.stringify(createInstagramExportPayload(records), null, 2);
+export function exportInstagramProfilesToJson(records: InstagramJsonExportRecord[]): string {
+  return JSON.stringify(createInstagramJsonExportPayload(records), null, 2);
 }
 
-export function buildInstagramJsonExportFilename(date = new Date()): string {
-  return `revit24-instagram-export-${date.toISOString().slice(0, 10)}.json`;
+export function buildInstagramProfilesJsonFilename(date = new Date()): string {
+  return `revit24-instagram-profiles-${date.toISOString().slice(0, 10)}.json`;
 }
 
-export function downloadJsonFile(data: unknown, filename: string): void {
-  const json = typeof data === "string" ? data : JSON.stringify(data, null, 2);
+/** @deprecated Use createInstagramJsonExportPayload */
+export const createInstagramExportPayload = createInstagramJsonExportPayload;
+
+/** @deprecated Use exportInstagramProfilesToJson */
+export const exportInstagramResultsToJson = exportInstagramProfilesToJson;
+
+/** @deprecated Use buildInstagramProfilesJsonFilename */
+export const buildInstagramJsonExportFilename = buildInstagramProfilesJsonFilename;
+
+export function downloadJsonFile(payload: unknown, filename: string): void {
+  const json = typeof payload === "string" ? payload : JSON.stringify(payload, null, 2);
   const blob = new Blob([json], { type: "application/json;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");

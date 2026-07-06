@@ -6,6 +6,8 @@ export const EXTRACTION_QUEUE_STATUSES = [
   "skipped",
 ] as const;
 
+import type { InstagramEntityType } from "@/lib/types/instagramExtraction";
+
 export type ExtractionQueueStatus = (typeof EXTRACTION_QUEUE_STATUSES)[number];
 
 export interface InstagramExtractionQueueDocument {
@@ -48,6 +50,8 @@ export interface InstagramResultsViewRow {
   displayName: string | null;
   publicEmail: string | null;
   website: string | null;
+  bio: string | null;
+  entityType: InstagramEntityType;
   status: string;
   errorCode: string | null;
   errorMessage: string | null;

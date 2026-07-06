@@ -51,6 +51,7 @@ Extraction results (success or failed).
 | Field | Description |
 |-------|-------------|
 | `username`, `profileUrl` | Profile identifiers |
+| `entityType` | `club`, `member`, or `unknown` (keyword detection) |
 | `displayName`, `bio`, `website`, `publicEmail` | Public metadata only |
 | `profileImageUrl` | From og:image / twitter:image |
 | `status` | `completed`, `failed`, `mock` |
@@ -117,9 +118,19 @@ Worker finished.
 Processed: 2 · Succeeded: 1 · Failed: 1 · Remaining: 0
 ```
 
-## View results
+## View results and export JSON
 
 Open `/results` in the web app and click **Refresh**. Summary cards show Pending, Running, Success, and Failed counts.
+
+Filter by **Clubs**, **Members**, **Unknown**, **Success**, or **Failed**.
+
+Click **Export JSON** to download `revit24-instagram-profiles-YYYY-MM-DD.json`. See [JSON_EXPORT.md](./JSON_EXPORT.md) for file structure and entity type rules.
+
+Each saved profile includes `entityType` (`club`, `member`, or `unknown`) detected from username, display name, and bio using deterministic keyword rules.
+
+## Future: Revit24.com upload
+
+Export JSON from Data Studio, then upload the file into Revit24.com when the importer is available. No direct Firebase upload to Revit24 is required for this workflow.
 
 ## Allowed data (public only)
 

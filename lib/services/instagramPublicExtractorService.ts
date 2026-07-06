@@ -21,17 +21,20 @@ import {
 import {
   findByUsername as findFirestoreByUsername,
 } from "@/lib/repositories/instagramExtractionsRepository";
+import { listQueueItems } from "@/lib/repositories/instagramExtractionQueueRepository";
 import { normalizeInstagramInput } from "@/lib/validation/instagramProfileInput";
 import { normalizeExtractorErrorCode } from "@/lib/providers/instagram/instagramPublicProfileErrors";
 import type { InstagramExtractionResult } from "@/lib/providers/instagram/instagramPublicProfileTypes";
 import { parseInstagramInput } from "@/lib/validation/instagramInput";
 import { buildMockProfileImageUrl } from "@/lib/utils/instagramMetadata";
+import { detectInstagramEntityType } from "@/lib/utils/instagramEntityType";
 import type {
   CreateInstagramExtractionInput,
   ExtractedInstagramProfile,
   ExtractionStatus,
   ExtractorPageData,
   ExtractorSettingsData,
+  InstagramEntityType,
   InstagramExtractApiResponse,
   InstagramExtractionRunSummary,
   StorageMode,
@@ -59,6 +62,7 @@ function toCreateInput(params: {
   bio: string | null;
   website: string | null;
   publicEmail: string | null;
+  entityType: InstagramEntityType;
   status: ExtractionStatus;
   error: string | null;
   errorCode: string | null;
@@ -68,6 +72,7 @@ function toCreateInput(params: {
   const timestamp = new Date().toISOString();
   return {
     source: "instagram",
+    entityType: params.entityType,
     username: params.username.toLowerCase(),
     profileUrl: params.profileUrl,
     profileImageUrl: params.profileImageUrl,
@@ -112,6 +117,11 @@ export async function extractAndUpsertSingleProfile(input: {
     bio: providerResult.data?.bio ?? null,
     website: providerResult.data?.website ?? null,
     publicEmail: providerResult.data?.publicEmail ?? null,
+    entityType: detectInstagramEntityType({
+      username: providerResult.data?.username ?? input.username,
+      displayName: providerResult.data?.displayName ?? null,
+      bio: providerResult.data?.bio ?? null,
+    }),
     status,
     error: providerResult.success ? null : providerResult.error,
     errorCode,
@@ -138,6 +148,9 @@ export async function extractProfileForApi(profileInput: string): Promise<Instag
     const failedRecord: ExtractedInstagramProfile = {
       id: `invalid_${Date.now()}`,
       source: "instagram",
+      entityType: detectInstagramEntityType({
+        username: profileInput.replace(/^@/, "").toLowerCase(),
+      }),
       username: profileInput.replace(/^@/, "").toLowerCase(),
       profileUrl: normalized.profileUrl ?? "",
       profileImageUrl: null,
@@ -297,6 +310,25 @@ export async function getExtractorSettingsData(): Promise<ExtractorSettingsData>
   const storageMode = getStorageMode();
   const extractionLive = isInstagramExtractionEnabled();
 
+  let pendingQueueCount = 0;
+  let resultsCount = 0;
+
+  if (isFirestoreAvailable()) {
+    try {
+      const [queueItems, extractions] = await Promise.all([
+        listQueueItems(),
+        listExtractionResults(),
+      ]);
+      pendingQueueCount = queueItems.filter(
+        (item) => item.status === "pending" || item.status === "running",
+      ).length;
+      resultsCount = extractions.length;
+    } catch {
+      pendingQueueCount = 0;
+      resultsCount = 0;
+    }
+  }
+
   return {
     firebaseConnected,
     firebaseStatus: firebase.statusLabel,
@@ -309,6 +341,8 @@ export async function getExtractorSettingsData(): Promise<ExtractorSettingsData>
     extractionMaxRetries: INSTAGRAM_EXTRACTOR_CONFIG.maxRetries,
     workerDelayMs: getInstagramWorkerDelayMs(),
     workerMaxRetries: getInstagramWorkerMaxRetries(),
+    pendingQueueCount,
+    resultsCount,
     importQueueCollection: FIRESTORE_COLLECTIONS.revit24_import_queue,
     deployment: "Vercel",
   };

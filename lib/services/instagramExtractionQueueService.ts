@@ -5,7 +5,8 @@ import {
   listQueueItems,
 } from "@/lib/repositories/instagramExtractionQueueRepository";
 import { listExtractionResults } from "@/lib/repositories/instagramExtractionsRepository";
-import type { InstagramExtractionDocument } from "@/lib/types/instagramExtraction";
+import type { InstagramEntityType, InstagramExtractionDocument } from "@/lib/types/instagramExtraction";
+import { detectInstagramEntityType } from "@/lib/utils/instagramEntityType";
 import type {
   CreateInstagramExtractionQueueInput,
   InstagramExtractionQueueDocument,
@@ -96,6 +97,19 @@ function buildResultsSummary(rows: InstagramResultsViewRow[]): InstagramResultsS
   return summary;
 }
 
+function resolveRowEntityType(
+  extraction: InstagramExtractionDocument | undefined,
+  username: string,
+  displayName: string | null,
+  bio: string | null,
+): InstagramEntityType {
+  if (extraction?.entityType) {
+    return extraction.entityType;
+  }
+
+  return detectInstagramEntityType({ username, displayName, bio });
+}
+
 function mergeResultsView(
   queueItems: InstagramExtractionQueueDocument[],
   extractions: InstagramExtractionDocument[],
@@ -122,6 +136,13 @@ function mergeResultsView(
       displayName: extraction?.displayName ?? null,
       publicEmail: extraction?.publicEmail ?? null,
       website: extraction?.website ?? null,
+      bio: extraction?.bio ?? null,
+      entityType: resolveRowEntityType(
+        extraction,
+        item.username,
+        extraction?.displayName ?? null,
+        extraction?.bio ?? null,
+      ),
       status: extraction ? mapExtractionStatus(extraction.status) : item.status,
       errorCode: item.errorCode ?? extraction?.errorCode ?? null,
       errorMessage: item.errorMessage ?? extraction?.errorMessage ?? extraction?.error ?? null,
@@ -146,6 +167,8 @@ function mergeResultsView(
       displayName: extraction.displayName,
       publicEmail: extraction.publicEmail,
       website: extraction.website,
+      bio: extraction.bio,
+      entityType: extraction.entityType,
       status: mapExtractionStatus(extraction.status),
       errorCode: extraction.errorCode,
       errorMessage: extraction.errorMessage ?? extraction.error,

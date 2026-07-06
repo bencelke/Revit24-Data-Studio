@@ -6,12 +6,13 @@ import {
 import { isFirebaseConfigured } from "@/lib/firebase/config";
 import { instagramPublicProfileProvider } from "@/lib/providers/instagram";
 import { normalizeExtractorErrorCode } from "@/lib/providers/instagram/instagramPublicProfileErrors";
+import { detectInstagramEntityType } from "@/lib/utils/instagramEntityType";
 import {
   findPendingQueueItems,
   updateQueueItem,
 } from "@/lib/repositories/instagramExtractionQueueRepository";
 import { upsertExtractionResult } from "@/lib/repositories/instagramExtractionsRepository";
-import type { CreateInstagramExtractionInput } from "@/lib/types/instagramExtraction";
+import type { CreateInstagramExtractionInput, InstagramEntityType } from "@/lib/types/instagramExtraction";
 import type { InstagramExtractionQueueDocument } from "@/lib/types/instagramExtractionQueue";
 
 function sleep(ms: number): Promise<void> {
@@ -34,6 +35,7 @@ function toExtractionInput(params: {
   bio: string | null;
   website: string | null;
   publicEmail: string | null;
+  entityType: InstagramEntityType;
   status: "completed" | "failed";
   errorCode: string | null;
   errorMessage: string | null;
@@ -43,6 +45,7 @@ function toExtractionInput(params: {
   const timestamp = nowIso();
   return {
     source: "instagram",
+    entityType: params.entityType,
     username: params.username.toLowerCase(),
     profileUrl: params.profileUrl,
     profileImageUrl: params.profileImageUrl,
@@ -111,6 +114,12 @@ export async function processQueueItem(
 
   if (providerResult.success && providerResult.data) {
     log("Metadata found: true");
+    const entityType = detectInstagramEntityType({
+      username: providerResult.data.username,
+      displayName: providerResult.data.displayName,
+      bio: providerResult.data.bio,
+    });
+    log(`Entity type: ${entityType}`);
     await upsertExtractionResult(
       toExtractionInput({
         username: providerResult.data.username,
@@ -120,6 +129,7 @@ export async function processQueueItem(
         bio: providerResult.data.bio,
         website: providerResult.data.website,
         publicEmail: providerResult.data.publicEmail,
+        entityType,
         status: "completed",
         errorCode: null,
         errorMessage: null,
@@ -146,6 +156,7 @@ export async function processQueueItem(
       bio: null,
       website: null,
       publicEmail: null,
+      entityType: detectInstagramEntityType({ username: item.username }),
       status: "failed",
       errorCode,
       errorMessage,

@@ -6,7 +6,7 @@ import {
 } from "@/lib/repositories/instagramExtractionQueueRepository";
 import { listExtractionResults } from "@/lib/repositories/instagramExtractionsRepository";
 import type { InstagramEntityType, InstagramExtractionDocument } from "@/lib/types/instagramExtraction";
-import { detectInstagramEntityType } from "@/lib/utils/instagramEntityType";
+import { detectInstagramEntityType } from "@/lib/services/entityTypeDetectionService";
 import type {
   CreateInstagramExtractionQueueInput,
   InstagramExtractionQueueDocument,
@@ -102,12 +102,18 @@ function resolveRowEntityType(
   username: string,
   displayName: string | null,
   bio: string | null,
+  status: string,
 ): InstagramEntityType {
-  if (extraction?.entityType) {
+  if (extraction?.entityType && extraction.entityType !== "unknown") {
     return extraction.entityType;
   }
 
-  return detectInstagramEntityType({ username, displayName, bio });
+  return detectInstagramEntityType({
+    username,
+    displayName,
+    bio,
+    status: extraction ? mapExtractionStatus(extraction.status) : status,
+  });
 }
 
 function mergeResultsView(
@@ -142,6 +148,7 @@ function mergeResultsView(
         item.username,
         extraction?.displayName ?? null,
         extraction?.bio ?? null,
+        extraction ? mapExtractionStatus(extraction.status) : item.status,
       ),
       status: extraction ? mapExtractionStatus(extraction.status) : item.status,
       errorCode: item.errorCode ?? extraction?.errorCode ?? null,

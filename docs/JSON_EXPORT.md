@@ -1,75 +1,93 @@
 # JSON Export
 
-Revit24 Data Studio exports extracted Instagram profiles as a structured JSON file from the **Results** page. This is the primary handoff format for a future Revit24.com importer.
+Revit24 Data Studio exports extracted Instagram profiles as JSON from the **Results** page. This file is designed for a future Revit24.com importer.
 
 ## Workflow
 
-1. Paste profile links on `/instagram-extractor` and click **Create Extraction Job**.
-2. Run `npm run worker:instagram` on your Mac to process the queue.
-3. Open `/results`, review profiles, filter by club/member/status.
-4. Click **Export JSON** to download `revit24-instagram-profiles-YYYY-MM-DD.json`.
+1. **Queue links** — Paste usernames/profile URLs on `/instagram-extractor`, then click **Create Extraction Job**.
+2. **Run worker** — On your Mac: `npm run worker:instagram` (see [LOCAL_INSTAGRAM_WORKER.md](./LOCAL_INSTAGRAM_WORKER.md)).
+3. **Review results** — Open `/results` and click **Refresh**.
+4. **Export JSON** — Choose an export scope and click **Export JSON**.
 
-## File structure
+Download: `revit24-instagram-profiles-YYYY-MM-DD.json`
+
+## Export options
+
+| Scope | Includes |
+|-------|----------|
+| **Successful only** (default) | Completed extractions only — ready for Revit24.com |
+| **All records** | Successful and failed extractions |
+| **Clubs only** | Successful profiles classified as `club` |
+| **Members only** | Successful profiles classified as `member` |
+
+Failed records are excluded by default.
+
+## JSON schema
 
 ```json
 {
-  "exportedAt": "2026-07-06T16:30:00.000Z",
+  "exportedAt": "2026-07-06T00:00:00.000Z",
   "source": "revit24-data-studio",
   "version": "1.0",
-  "recordCount": 2,
+  "recordCount": 123,
+  "summary": {
+    "clubs": 40,
+    "members": 75,
+    "unknown": 8,
+    "success": 115,
+    "failed": 8
+  },
   "records": [
     {
       "source": "instagram",
       "entityType": "club",
-      "username": "revit24official",
-      "profileUrl": "https://www.instagram.com/revit24official/",
-      "displayName": "Revit24",
+      "username": "exampleclub",
+      "profileUrl": "https://www.instagram.com/exampleclub/",
+      "displayName": "Example Club",
       "profileImageUrl": "https://...",
       "bio": "...",
-      "website": "https://revit24.com",
-      "publicEmail": null,
+      "website": "https://...",
+      "publicEmail": "example@email.com",
       "status": "success",
       "errorCode": "",
       "errorMessage": "",
-      "extractedAt": "2026-07-06T16:25:00.000Z"
+      "extractedAt": "2026-07-06T00:00:00.000Z"
     }
   ]
 }
 ```
 
-Only **extracted** rows are included (not pending queue jobs). Failed extractions are included with error fields.
-
 ## Entity type detection
 
-Each record includes `entityType`:
+Deterministic keyword rules in `lib/services/entityTypeDetectionService.ts`:
 
-| Value | Meaning |
-|-------|---------|
-| `club` | Username, display name, or bio contains club-like terms (club, crew, community, team, official, meet, etc.) |
-| `member` | No club terms found — treated as individual enthusiast |
-| `unknown` | Not enough text to classify |
+| Type | Rule |
+|------|------|
+| `club` | Username, display name, or bio contains: club, crew, community, team, gruppe, owners, drivers, society, cars, meet, meets, official, chapter |
+| `member` | Successful extraction with no club-like terms |
+| `unknown` | Failed extraction or insufficient data |
 
-Detection is **deterministic keyword rules only** — no AI. Manual override is planned for a later phase.
+No AI is used. Manual override is planned for a later phase.
 
 ## JSON vs CSV
 
 | | JSON | CSV |
 |---|------|-----|
-| **Purpose** | Revit24.com import, APIs, scripts | Spreadsheets, quick review |
-| **Structure** | Versioned envelope + typed records | Flat rows |
+| **Best for** | Revit24.com import, scripts, APIs | Spreadsheets |
+| **Envelope** | `exportedAt`, `version`, `summary`, `recordCount` | Header row only |
 | **Entity type** | Included | Included |
-| **Metadata** | `exportedAt`, `version`, `recordCount` | Header row only |
+
+CSV columns: `source,entityType,username,profileUrl,displayName,profileImageUrl,bio,website,publicEmail,status,errorCode,errorMessage,extractedAt`
 
 ## Future Revit24.com upload
 
-The JSON envelope (`source`, `version`, `recordCount`) lets Revit24.com validate the file before import. Until the importer ships, archive exports locally or process them with your own scripts.
+1. Export JSON from Data Studio (successful profiles recommended).
+2. Upload the file into Revit24.com when the importer ships.
+3. Revit24.com validates `version` and `summary`, then imports `records`.
+
+Until then, archive exports locally or process with your own tooling.
 
 ## Implementation
 
-`lib/utils/jsonExport.ts`
-
-- `createInstagramJsonExportPayload(records)`
-- `exportInstagramProfilesToJson(records)`
-- `downloadJsonFile(payload, filename)`
-
-Entity detection: `lib/utils/instagramEntityType.ts` → `detectInstagramEntityType()`
+- `lib/utils/jsonExport.ts` — `createInstagramJsonExportPayload`, `exportInstagramProfilesToJson`, `downloadJsonFile`
+- `lib/services/entityTypeDetectionService.ts` — `detectInstagramEntityType`

@@ -6,7 +6,7 @@ import {
 import { isFirebaseConfigured } from "@/lib/firebase/config";
 import { instagramPublicProfileProvider } from "@/lib/providers/instagram";
 import { normalizeExtractorErrorCode } from "@/lib/providers/instagram/instagramPublicProfileErrors";
-import { detectInstagramEntityType } from "@/lib/utils/instagramEntityType";
+import { detectInstagramEntityType } from "@/lib/services/entityTypeDetectionService";
 import {
   findPendingQueueItems,
   updateQueueItem,
@@ -118,6 +118,7 @@ export async function processQueueItem(
       username: providerResult.data.username,
       displayName: providerResult.data.displayName,
       bio: providerResult.data.bio,
+      status: "completed",
     });
     log(`Entity type: ${entityType}`);
     await upsertExtractionResult(
@@ -156,7 +157,7 @@ export async function processQueueItem(
       bio: null,
       website: null,
       publicEmail: null,
-      entityType: detectInstagramEntityType({ username: item.username }),
+      entityType: detectInstagramEntityType({ username: item.username, status: "failed" }),
       status: "failed",
       errorCode,
       errorMessage,

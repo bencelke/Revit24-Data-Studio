@@ -15,7 +15,7 @@ import { isoToTimestamp, timestampToIso } from "@/lib/firebase/timestamps";
 import { FirestoreNotConfiguredError } from "@/lib/errors/app-errors";
 import { mockInstagramExtractionsStore } from "@/lib/mock-data/instagramExtractionsStore";
 import { getFirestoreDb, isFirestoreAvailable } from "@/lib/repositories/firestore-client";
-import { detectInstagramEntityType } from "@/lib/utils/instagramEntityType";
+import { detectInstagramEntityType } from "@/lib/services/entityTypeDetectionService";
 import type {
   CreateInstagramExtractionInput,
   ExtractionStatus,
@@ -31,11 +31,22 @@ function resolveEntityType(
   displayName: string | null,
   bio: string | null,
 ): InstagramEntityType {
-  if (data.entityType === "club" || data.entityType === "member" || data.entityType === "unknown") {
+  const status = typeof data.status === "string" ? data.status : null;
+
+  if (status === "failed") {
+    return "unknown";
+  }
+
+  if (data.entityType === "club" || data.entityType === "member") {
     return data.entityType;
   }
 
-  return detectInstagramEntityType({ username, displayName, bio });
+  return detectInstagramEntityType({
+    username,
+    displayName,
+    bio,
+    status,
+  });
 }
 
 function mapExtractionDoc(id: string, data: DocumentData): InstagramExtractionDocument {

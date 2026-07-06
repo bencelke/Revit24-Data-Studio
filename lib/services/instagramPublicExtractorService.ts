@@ -27,7 +27,7 @@ import { normalizeExtractorErrorCode } from "@/lib/providers/instagram/instagram
 import type { InstagramExtractionResult } from "@/lib/providers/instagram/instagramPublicProfileTypes";
 import { parseInstagramInput } from "@/lib/validation/instagramInput";
 import { buildMockProfileImageUrl } from "@/lib/utils/instagramMetadata";
-import { detectInstagramEntityType } from "@/lib/utils/instagramEntityType";
+import { detectInstagramEntityType } from "@/lib/services/entityTypeDetectionService";
 import type {
   CreateInstagramExtractionInput,
   ExtractedInstagramProfile,
@@ -121,6 +121,7 @@ export async function extractAndUpsertSingleProfile(input: {
       username: providerResult.data?.username ?? input.username,
       displayName: providerResult.data?.displayName ?? null,
       bio: providerResult.data?.bio ?? null,
+      status,
     }),
     status,
     error: providerResult.success ? null : providerResult.error,
@@ -150,6 +151,7 @@ export async function extractProfileForApi(profileInput: string): Promise<Instag
       source: "instagram",
       entityType: detectInstagramEntityType({
         username: profileInput.replace(/^@/, "").toLowerCase(),
+        status: "failed",
       }),
       username: profileInput.replace(/^@/, "").toLowerCase(),
       profileUrl: normalized.profileUrl ?? "",

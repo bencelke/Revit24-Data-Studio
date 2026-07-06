@@ -1,21 +1,23 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { RefreshCw } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { FirestoreStatusBanner } from "@/components/imports/DataModeBadge";
 import { InstagramResultsTable } from "./InstagramResultsTable";
 import { ResultsActions } from "./ResultsActions";
-import { ResultsSummaryCards } from "./ResultsSummaryCards";
+import { ResultsEmptyState } from "./ResultsEmptyState";
+import { ResultsSummaryCards, type InstagramExtractedResultsSummary } from "./ResultsSummaryCards";
 import { applyResultsFilter, ResultsFilters, type ResultsFilter } from "./ResultsFilters";
 import { buildInstagramExtractionCsv, downloadCsv } from "@/lib/utils/csvExport";
 import {
   buildInstagramProfilesJsonFilename,
   downloadJsonFile,
   exportInstagramProfilesToJson,
+  filterRecordsForExportScope,
   type InstagramJsonExportRecord,
+  type JsonExportScope,
 } from "@/lib/utils/jsonExport";
 import {
   clearExtractionResults,
@@ -28,6 +30,7 @@ import {
   buildResultsSummary,
   mergeResultsView,
 } from "@/lib/services/instagramExtractionQueueService";
+import { detectInstagramEntityType } from "@/lib/services/entityTypeDetectionService";
 import { MOCK_MODE_WARNING, getErrorMessage } from "@/lib/errors/app-errors";
 import type { ExtractedInstagramProfile, ExtractorPageData } from "@/lib/types/instagramExtraction";
 import type { InstagramResultsSummary, InstagramResultsViewRow } from "@/lib/types/instagramExtractionQueue";
@@ -36,22 +39,37 @@ interface ResultsClientProps extends ExtractorPageData {
   initialResults: ExtractedInstagramProfile[];
 }
 
-const EMPTY_SUMMARY: InstagramResultsSummary = {
+const EMPTY_QUEUE_SUMMARY: InstagramResultsSummary = {
   pending: 0,
   running: 0,
   success: 0,
   failed: 0,
 };
 
-function mapRowToJsonExportRecord(row: InstagramResultsViewRow): InstagramJsonExportRecord {
-  const status =
-    row.status === "success" || row.status === "completed" || row.status === "mock"
-      ? "success"
-      : row.status;
+function normalizeExportStatus(status: string): string {
+  if (status === "success" || status === "completed" || status === "mock") {
+    return "success";
+  }
+  return status;
+}
 
+function isSuccessfulRow(status: string): boolean {
+  return status === "success" || status === "completed" || status === "mock";
+}
+
+function resolveRowEntityType(row: InstagramResultsViewRow) {
+  return detectInstagramEntityType({
+    username: row.username,
+    displayName: row.displayName,
+    bio: row.bio,
+    status: normalizeExportStatus(row.status),
+  });
+}
+
+function mapRowToJsonExportRecord(row: InstagramResultsViewRow): InstagramJsonExportRecord {
   return {
     source: "instagram",
-    entityType: row.entityType,
+    entityType: resolveRowEntityType(row),
     username: row.username,
     profileUrl: row.profileUrl,
     displayName: row.displayName,
@@ -59,7 +77,7 @@ function mapRowToJsonExportRecord(row: InstagramResultsViewRow): InstagramJsonEx
     bio: row.bio,
     website: row.website,
     publicEmail: row.publicEmail,
-    status,
+    status: normalizeExportStatus(row.status),
     errorCode: row.errorCode ?? "",
     errorMessage: row.errorMessage ?? "",
     extractedAt: row.extractedAt ?? new Date().toISOString(),
@@ -70,13 +88,38 @@ function getExtractedRows(rows: InstagramResultsViewRow[]): InstagramResultsView
   return rows.filter((row) => row.extractionId);
 }
 
+function buildExtractedSummary(rows: InstagramResultsViewRow[]): InstagramExtractedResultsSummary {
+  const extracted = getExtractedRows(rows);
+  const summary: InstagramExtractedResultsSummary = {
+    total: extracted.length,
+    clubs: 0,
+    members: 0,
+    unknown: 0,
+    success: 0,
+    failed: 0,
+  };
+
+  for (const row of extracted) {
+    const entityType = resolveRowEntityType(row);
+    if (entityType === "club") summary.clubs += 1;
+    else if (entityType === "member") summary.members += 1;
+    else summary.unknown += 1;
+
+    if (isSuccessfulRow(row.status)) summary.success += 1;
+    else if (row.status === "failed") summary.failed += 1;
+  }
+
+  return summary;
+}
+
 export function ResultsClient({
   firebaseConnected,
   storageMode,
 }: ResultsClientProps) {
   const [rows, setRows] = useState<InstagramResultsViewRow[]>([]);
-  const [summary, setSummary] = useState<InstagramResultsSummary>(EMPTY_SUMMARY);
+  const [queueSummary, setQueueSummary] = useState<InstagramResultsSummary>(EMPTY_QUEUE_SUMMARY);
   const [filter, setFilter] = useState<ResultsFilter>("all");
+  const [exportScope, setExportScope] = useState<JsonExportScope>("successful");
   const [mounted, setMounted] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -88,7 +131,7 @@ export function ResultsClient({
       const extractions = listExtractionResultsSync();
       const merged = mergeResultsView(queueItems, extractions);
       setRows(merged);
-      setSummary(buildResultsSummary(merged));
+      setQueueSummary(buildResultsSummary(merged));
       return;
     }
 
@@ -104,7 +147,7 @@ export function ResultsClient({
     }
 
     setRows(payload.rows ?? []);
-    setSummary(payload.summary ?? EMPTY_SUMMARY);
+    setQueueSummary(payload.summary ?? EMPTY_QUEUE_SUMMARY);
   }, []);
 
   useEffect(() => {
@@ -116,9 +159,10 @@ export function ResultsClient({
     });
   }, [loadResults]);
 
-  const visibleRows = mounted ? rows : [];
+  const visibleRows = useMemo(() => (mounted ? rows : []), [mounted, rows]);
+  const extractedRows = useMemo(() => getExtractedRows(visibleRows), [visibleRows]);
+  const extractedSummary = useMemo(() => buildExtractedSummary(visibleRows), [visibleRows]);
   const filteredRows = applyResultsFilter(visibleRows, filter);
-  const extractedRows = getExtractedRows(visibleRows);
   const hasResults = visibleRows.length > 0;
   const hasExtractedRecords = extractedRows.length > 0;
 
@@ -135,31 +179,36 @@ export function ResultsClient({
     }
   }
 
+  function getExportRecords(): InstagramJsonExportRecord[] {
+    return extractedRows.map(mapRowToJsonExportRecord);
+  }
+
   function handleExportCsv() {
     if (!hasExtractedRecords) return;
-    const csvRows = extractedRows.map((row) => ({
-      id: row.extractionId as string,
+    const records = filterRecordsForExportScope(getExportRecords(), exportScope);
+    const csvRows = records.map((record) => ({
+      id: `export_${record.username}`,
       source: "instagram" as const,
-      entityType: row.entityType,
-      username: row.username,
-      profileUrl: row.profileUrl,
-      profileImageUrl: row.profileImageUrl,
-      displayName: row.displayName,
-      bio: row.bio,
-      website: row.website,
-      publicEmail: row.publicEmail,
+      entityType: record.entityType,
+      username: record.username,
+      profileUrl: record.profileUrl,
+      profileImageUrl: record.profileImageUrl,
+      displayName: record.displayName,
+      bio: record.bio,
+      website: record.website,
+      publicEmail: record.publicEmail,
       status:
-        row.status === "success" || row.status === "completed"
+        record.status === "success"
           ? ("completed" as const)
-          : row.status === "mock"
+          : record.status === "mock"
             ? ("mock" as const)
             : ("failed" as const),
-      error: row.errorMessage,
-      errorCode: row.errorCode,
-      errorMessage: row.errorMessage,
-      extractedAt: row.extractedAt ?? new Date().toISOString(),
-      createdAt: row.extractedAt ?? new Date().toISOString(),
-      updatedAt: row.extractedAt ?? new Date().toISOString(),
+      error: record.errorMessage,
+      errorCode: record.errorCode,
+      errorMessage: record.errorMessage,
+      extractedAt: record.extractedAt,
+      createdAt: record.extractedAt,
+      updatedAt: record.extractedAt,
     }));
     const csv = buildInstagramExtractionCsv(csvRows);
     downloadCsv(`revit24-instagram-${new Date().toISOString().slice(0, 10)}.csv`, csv);
@@ -167,8 +216,8 @@ export function ResultsClient({
 
   function handleExportJson() {
     if (!hasExtractedRecords) return;
-    const records = extractedRows.map(mapRowToJsonExportRecord);
-    const json = exportInstagramProfilesToJson(records);
+    const records = getExportRecords();
+    const json = exportInstagramProfilesToJson(records, { scope: exportScope });
     downloadJsonFile(json, buildInstagramProfilesJsonFilename());
   }
 
@@ -180,7 +229,7 @@ export function ResultsClient({
       if (usesLocalStorage()) {
         await clearExtractionResults();
         setRows([]);
-        setSummary(EMPTY_SUMMARY);
+        setQueueSummary(EMPTY_QUEUE_SUMMARY);
         return;
       }
 
@@ -194,7 +243,7 @@ export function ResultsClient({
       }
 
       setRows([]);
-      setSummary(EMPTY_SUMMARY);
+      setQueueSummary(EMPTY_QUEUE_SUMMARY);
     } catch (clearError) {
       setError(getErrorMessage(clearError));
     } finally {
@@ -242,16 +291,13 @@ export function ResultsClient({
             {storageMode === "live" ? "Firebase Live Mode" : "Mock localStorage"}
           </Badge>
           <Badge variant="outline">Local worker extraction</Badge>
+          {queueSummary.pending > 0 ? (
+            <Badge variant="outline">{queueSummary.pending} pending in queue</Badge>
+          ) : null}
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => void handleRefresh()} disabled={isRefreshing}>
-            <RefreshCw className={`mr-2 size-4 ${isRefreshing ? "animate-spin" : ""}`} />
-            Refresh
-          </Button>
-          <Button variant="ghost" size="sm" nativeButton={false} render={<Link href="/instagram-extractor" />}>
-            Back to Extractor
-          </Button>
-        </div>
+        <Button variant="ghost" size="sm" nativeButton={false} render={<Link href="/instagram-extractor" />}>
+          Back to Extractor
+        </Button>
       </div>
 
       {storageMode === "mock" ? (
@@ -266,24 +312,33 @@ export function ResultsClient({
           title="Firebase Connected"
           description={
             firebaseConnected
-              ? "Queue jobs in Firestore, run npm run worker:instagram locally, then export JSON for Revit24.com."
+              ? "Queue profiles, run npm run worker:instagram on your Mac, then export JSON for Revit24.com."
               : undefined
           }
         />
       )}
 
-      <ResultsSummaryCards summary={summary} />
-
       <ResultsActions
         hasExtractedRecords={hasExtractedRecords}
         hasResults={hasResults}
         isClearing={isClearing}
-        onExportCsv={handleExportCsv}
+        isRefreshing={isRefreshing}
+        exportScope={exportScope}
+        onExportScopeChange={setExportScope}
         onExportJson={handleExportJson}
+        onExportCsv={handleExportCsv}
+        onRefresh={() => void handleRefresh()}
         onClear={handleClear}
       />
 
-      <ResultsFilters value={filter} onChange={setFilter} />
+      {hasExtractedRecords ? (
+        <>
+          <ResultsSummaryCards summary={extractedSummary} />
+          <ResultsFilters value={filter} onChange={setFilter} />
+        </>
+      ) : (
+        <ResultsEmptyState />
+      )}
 
       {error ? (
         <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
@@ -291,10 +346,12 @@ export function ResultsClient({
         </div>
       ) : null}
 
-      <InstagramResultsTable
-        rows={filteredRows}
-        onRemove={(id, extractionId) => void handleRemove(id, extractionId)}
-      />
+      {hasExtractedRecords ? (
+        <InstagramResultsTable
+          rows={filteredRows}
+          onRemove={(id, extractionId) => void handleRemove(id, extractionId)}
+        />
+      ) : null}
     </div>
   );
 }

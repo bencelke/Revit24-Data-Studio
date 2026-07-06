@@ -10,22 +10,22 @@ function escapeCsvValue(value: string | null | undefined): string {
 
 export function buildInstagramExtractionCsv(rows: ExtractedInstagramProfile[]): string {
   const header =
-    "username,profileUrl,profileImageUrl,displayName,entityType,bio,website,publicEmail,status,errorCode,errorMessage,error,extractedAt";
+    "source,entityType,username,profileUrl,displayName,profileImageUrl,bio,website,publicEmail,status,errorCode,errorMessage,extractedAt";
 
   const lines = rows.map((row) =>
     [
+      escapeCsvValue(row.source),
+      escapeCsvValue(row.entityType),
       escapeCsvValue(row.username),
       escapeCsvValue(row.profileUrl),
-      escapeCsvValue(row.profileImageUrl),
       escapeCsvValue(row.displayName),
-      escapeCsvValue(row.entityType),
+      escapeCsvValue(row.profileImageUrl),
       escapeCsvValue(row.bio),
       escapeCsvValue(row.website),
       escapeCsvValue(row.publicEmail),
       escapeCsvValue(row.status),
       escapeCsvValue(row.errorCode),
       escapeCsvValue(row.errorMessage),
-      escapeCsvValue(row.error),
       escapeCsvValue(row.extractedAt),
     ].join(","),
   );

@@ -13,7 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ProfileAvatar } from "./ProfileAvatar";
-import { formatInstagramEntityType } from "@/lib/utils/instagramEntityType";
+import { formatInstagramEntityType } from "@/lib/services/entityTypeDetectionService";
 import type { InstagramResultsViewRow } from "@/lib/types/instagramExtractionQueue";
 
 interface InstagramResultsTableProps {

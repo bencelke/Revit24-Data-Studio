@@ -8,13 +8,29 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import type { InstagramPublicProfileMetadata } from "@/workers/instagram/instagramPublicProfileTypes";
+import type { InstagramProfileDocument } from "@/lib/types/instagram-profiles";
+import type { EntityMatchDocument } from "@/lib/types/duplicates";
+import type { NormalizedRecordDocument } from "@/lib/types/normalization";
 
 interface InstagramProfilePreviewProps {
-  profile: InstagramPublicProfileMetadata;
+  profile: InstagramPublicProfileMetadata | InstagramProfileDocument;
   rawSummary?: Record<string, unknown> | null;
+  normalizedRecord?: NormalizedRecordDocument | null;
+  duplicateMatches?: EntityMatchDocument[];
+  reviewStatus?: string | null;
 }
 
-export function InstagramProfilePreview({ profile, rawSummary }: InstagramProfilePreviewProps) {
+export function InstagramProfilePreview({
+  profile,
+  rawSummary,
+  normalizedRecord,
+  duplicateMatches = [],
+  reviewStatus,
+}: InstagramProfilePreviewProps) {
+  const safeMetadata =
+    rawSummary ??
+    ("rawSafeMetadata" in profile ? profile.rawSafeMetadata : null) ??
+    null;
   return (
     <Card className="border-border bg-card shadow-none">
       <CardHeader>
@@ -94,14 +110,56 @@ export function InstagramProfilePreview({ profile, rawSummary }: InstagramProfil
           ) : null}
         </dl>
 
-        {rawSummary ? (
+        {safeMetadata ? (
           <div className="rounded-lg border border-border bg-muted/30 p-3">
             <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               Raw Safe Metadata
             </p>
             <pre className="overflow-x-auto text-xs text-muted-foreground">
-              {JSON.stringify(rawSummary, null, 2)}
+              {JSON.stringify(safeMetadata, null, 2)}
             </pre>
+          </div>
+        ) : null}
+
+        {normalizedRecord ? (
+          <div className="rounded-lg border border-border p-3 text-sm">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Normalization
+            </p>
+            <p className="mt-1">
+              Entity type: {normalizedRecord.entityType} · Confidence:{" "}
+              {normalizedRecord.confidenceScore}
+            </p>
+            {normalizedRecord.specialties.length > 0 ? (
+              <p className="text-muted-foreground">
+                Specialties: {normalizedRecord.specialties.join(", ")}
+              </p>
+            ) : null}
+          </div>
+        ) : null}
+
+        {reviewStatus ? (
+          <div className="text-sm">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Review Status
+            </p>
+            <Badge variant="outline" className="mt-1 capitalize">
+              {reviewStatus}
+            </Badge>
+          </div>
+        ) : null}
+
+        {duplicateMatches.length > 0 ? (
+          <div className="space-y-2 text-sm">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Potential Duplicates
+            </p>
+            {duplicateMatches.slice(0, 5).map((match) => (
+              <div key={match.id} className="rounded border border-border px-2 py-1">
+                {match.matchedDisplayName ?? match.recordBId} — {match.confidence} (
+                {match.reasons.join(", ")})
+              </div>
+            ))}
           </div>
         ) : null}
       </CardContent>

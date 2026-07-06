@@ -22,6 +22,9 @@ export const INSTAGRAM_PROVIDER_CONFIG = {
   /** Max retries per profile on retryable errors. */
   maxRetries: readNumber(process.env.INSTAGRAM_EXTRACTION_MAX_RETRIES, 1),
 
+  /** Profiles processed per worker cycle (sequential within batch). */
+  batchSize: readNumber(process.env.INSTAGRAM_EXTRACTION_BATCH_SIZE, 1),
+
   /** Legacy mock override — forces mock even when enabled. */
   forceMock: process.env.INSTAGRAM_EXTRACTION_MODE === "mock",
 } as const;
@@ -44,4 +47,8 @@ export function getInstagramExtractionTimeoutMs(): number {
 
 export function getInstagramExtractionMaxRetries(): number {
   return INSTAGRAM_PROVIDER_CONFIG.maxRetries;
+}
+
+export function getInstagramExtractionBatchSize(): number {
+  return Math.max(1, INSTAGRAM_PROVIDER_CONFIG.batchSize);
 }

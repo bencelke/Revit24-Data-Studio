@@ -1,6 +1,7 @@
 import { mockInstagramProfileStore } from "@/lib/mock-data/instagramProfileStore";
 import { mockQueueStore } from "@/lib/mock-data/queueStore";
 import { RUNTIME_CONFIG } from "@/lib/config/runtime";
+import { getInstagramExtractionBatchSize } from "@/lib/config/instagramProvider";
 import { FirestoreNotConfiguredError } from "@/lib/errors/app-errors";
 import {
   getExtractionJob as fetchExtractionJob,
@@ -13,6 +14,7 @@ import {
 import { upsertInstagramProfile as persistInstagramProfile } from "@/lib/repositories/instagramProfilesRepository";
 import { isFirestoreAvailable } from "@/lib/repositories/firestore-client";
 import { normalizeInstagramProfile } from "@/lib/services/normalizationPipeline";
+import { completeInstagramExtractionPipeline } from "@/lib/services/instagramBulkExtractionService";
 import { logInstagramExtractionPipelineEvent } from "@/lib/services/instagramPipelineLogging";
 import type {
   ExtractionProvider,
@@ -147,7 +149,8 @@ export class InstagramExtractionProvider implements ExtractionProvider {
     context: JobExecutionContext,
   ): Promise<JobExecutionResult> {
     const records = await loadRecords(job.id);
-    const pending = getPendingRecords(records).slice(0, RUNTIME_CONFIG.batchSize);
+    const batchSize = Math.min(getInstagramExtractionBatchSize(), RUNTIME_CONFIG.batchSize);
+    const pending = getPendingRecords(records).slice(0, batchSize);
 
     let processedTotal = job.processedRecords;
     let successfulTotal = job.successfulRecords;
@@ -229,6 +232,17 @@ export class InstagramExtractionProvider implements ExtractionProvider {
             extractionRecordId: record.id,
             importRecordId: record.importRecordId,
             rawJson: null,
+            isPrivate: false,
+            lastExtractedAt: timestamp,
+            sourceImportJobId: job.importJobId,
+            sourceImportRecordId: record.importRecordId,
+            rawSafeMetadata: {
+              username: result.data.username,
+              verified: result.data.verified,
+              businessCategory: result.data.businessCategory,
+            },
+            createdAt: timestamp,
+            updatedAt: timestamp,
           });
 
           try {
@@ -287,6 +301,13 @@ export class InstagramExtractionProvider implements ExtractionProvider {
               extractionRecordId: record.id,
               importRecordId: record.importRecordId,
               rawJson: null,
+              isPrivate: errorCode === "PRIVATE_PROFILE",
+              lastExtractedAt: timestamp,
+              sourceImportJobId: job.importJobId,
+              sourceImportRecordId: record.importRecordId,
+              rawSafeMetadata: null,
+              createdAt: timestamp,
+              updatedAt: timestamp,
             });
           }
 
@@ -410,6 +431,10 @@ export class InstagramExtractionProvider implements ExtractionProvider {
     });
 
     const refreshedJob = await loadJob(job.id);
+
+    if (!hasPending && refreshedJob) {
+      await completeInstagramExtractionPipeline(refreshedJob);
+    }
 
     return {
       processed: processedTotal - job.processedRecords,

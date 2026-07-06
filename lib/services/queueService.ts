@@ -406,19 +406,34 @@ function buildTimelineFromJob(job: ExtractionJobDocument): QueueTimelineEvent[] 
 
 export async function createExtractionJobFromImportJob(
   importJobId: string,
+  options?: { autoQueue?: boolean },
 ): Promise<ExtractionJobWithRecords | null> {
   const importJob = await loadImportJob(importJobId);
   if (!importJob) return null;
 
+  const existingJobs = await loadExtractionJobs();
+  const alreadyQueued = existingJobs.find(
+    (job) => job.importJobId === importJobId && job.status !== "cancelled",
+  );
+  if (alreadyQueued) {
+    return {
+      ...alreadyQueued,
+      records: await loadExtractionRecords(alreadyQueued.id),
+    };
+  }
+
   const importRecords = await loadImportRecordsForJob(importJobId);
   const validRecords = importRecords.filter((record) => record.status === "valid");
   const timestamp = new Date().toISOString();
+  const autoQueue = options?.autoQueue !== false;
+
+  const jobStatus: ExtractionJobDocument["status"] = autoQueue ? "queued" : "waiting";
 
   const jobInput = {
     importJobId,
     name: `Extraction — ${importJob.name}`,
     platform: mapPlatformFromSource(importJob.source),
-    status: "waiting" as const,
+    status: jobStatus,
     priority: "normal" as const,
     createdBy: CREATED_BY,
     createdAt: timestamp,
@@ -435,12 +450,14 @@ export async function createExtractionJobFromImportJob(
     notes: null,
   };
 
+  const recordStatus: ExtractionRecordDocument["status"] = autoQueue ? "queued" : "waiting";
+
   const recordInputs = validRecords.map((record) => ({
     jobId: "",
     importRecordId: record.id,
     username: record.username,
     profileUrl: record.profileUrl,
-    status: "waiting" as const,
+    status: recordStatus,
     attempts: 0,
     startedAt: null,
     completedAt: null,
@@ -544,7 +561,10 @@ export async function performQueueAction(
     }
 
     if (updates.status) {
-      const message = `${payload.action} action applied (UI only — no worker execution)`;
+      const message =
+        payload.action === "queue"
+          ? "Job queued for worker runtime"
+          : `${payload.action} action applied`;
       if (!isFirestoreAvailable()) {
         mockQueueStore.addTimelineEvent(jobId, {
           timestamp: new Date().toISOString(),

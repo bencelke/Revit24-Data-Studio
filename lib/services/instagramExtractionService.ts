@@ -34,7 +34,7 @@ import { INSTAGRAM_WORKER_VERSION } from "@/workers/instagram/constants";
 
 const WORKER_ID = "worker_mac_studio";
 const WORKER_NAME = "Mac Studio — Primary";
-const AVG_SECONDS_PER_PROFILE = 3;
+import { getInstagramExtractionDelayMs } from "@/lib/config/instagramProvider";
 
 function mapErrorToProfileStatus(code: ExtractionErrorCode | undefined): InstagramProfileStatus {
   switch (code) {
@@ -180,7 +180,7 @@ export function computeExtractionProgress(
     failed: job.failedRecords,
     remaining,
     estimatedRemainingSeconds:
-      remaining > 0 ? remaining * AVG_SECONDS_PER_PROFILE : null,
+      remaining > 0 ? Math.ceil((remaining * getInstagramExtractionDelayMs()) / 1000) : null,
   };
 }
 

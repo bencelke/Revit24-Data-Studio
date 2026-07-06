@@ -33,8 +33,8 @@ export default function InstagramBulkImportPage() {
         <div>
           <h2 className="text-base font-semibold">Bulk Profile Link Import</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Paste profile links or usernames to normalize, validate, and queue
-            for future public metadata extraction.
+            Paste hundreds or thousands of profile links or usernames. Valid records are queued for
+            sequential public metadata extraction via the worker runtime.
           </p>
         </div>
 

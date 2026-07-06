@@ -48,6 +48,24 @@ function mapProfileDoc(id: string, data: DocumentData): InstagramProfileDocument
       data.rawJson != null && typeof data.rawJson === "object"
         ? (data.rawJson as Record<string, unknown>)
         : null,
+    isPrivate: Boolean(data.isPrivate ?? data.status === "private"),
+    lastExtractedAt: timestampToIso(data.lastExtractedAt ?? data.extractedAt),
+    sourceImportJobId:
+      data.sourceImportJobId != null ? String(data.sourceImportJobId) : null,
+    sourceImportRecordId:
+      data.sourceImportRecordId != null
+        ? String(data.sourceImportRecordId)
+        : data.importRecordId != null
+          ? String(data.importRecordId)
+          : null,
+    rawSafeMetadata:
+      data.rawSafeMetadata != null && typeof data.rawSafeMetadata === "object"
+        ? (data.rawSafeMetadata as Record<string, unknown>)
+        : data.rawJson != null && typeof data.rawJson === "object"
+          ? (data.rawJson as Record<string, unknown>)
+          : null,
+    createdAt: timestampToIso(data.createdAt ?? data.extractedAt),
+    updatedAt: timestampToIso(data.updatedAt ?? data.extractedAt),
   };
 }
 
@@ -76,6 +94,13 @@ function buildPayload(input: CreateInstagramProfileInput) {
     extractionRecordId: input.extractionRecordId,
     importRecordId: input.importRecordId,
     rawJson: input.rawJson,
+    isPrivate: input.isPrivate ?? input.status === "private",
+    lastExtractedAt: isoToTimestamp(input.lastExtractedAt ?? input.extractedAt),
+    sourceImportJobId: input.sourceImportJobId ?? null,
+    sourceImportRecordId: input.sourceImportRecordId ?? input.importRecordId,
+    rawSafeMetadata: input.rawSafeMetadata ?? input.rawJson,
+    createdAt: isoToTimestamp(input.createdAt ?? input.extractedAt),
+    updatedAt: isoToTimestamp(input.updatedAt ?? input.extractedAt),
   };
 }
 

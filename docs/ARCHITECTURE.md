@@ -649,6 +649,31 @@ See [INSTAGRAM_PROVIDER.md](./INSTAGRAM_PROVIDER.md) for allowed data, rate limi
 
 `ENABLE_INSTAGRAM_EXTRACTION=false` by default. Live extraction must be explicitly enabled.
 
+## Phase 18 — Production Instagram Bulk Public Profile Extraction
+
+Collectors paste hundreds or thousands of Instagram profile URLs/usernames. The system creates import, pipeline, and extraction jobs, then processes records sequentially through the worker runtime.
+
+### Routes
+
+| Route | Purpose |
+|-------|---------|
+| `/imports/new/instagram` | Bulk paste import |
+| `/instagram/extraction` | Extraction dashboard |
+| `/instagram/profiles` | Extracted profiles list |
+| `/instagram/profiles/[username]` | Profile detail preview |
+| `/profiles/[username]` | Internal extraction review |
+
+### Services
+
+| Service | Role |
+|---------|------|
+| `instagramBulkExtractionService.ts` | Queue import → extraction, pipeline linking, dashboard data |
+| `importJobService.ts` | Auto-queues extraction after bulk import |
+| `queueService.ts` | Creates extraction jobs with `queued` status |
+| `workers/providers/instagram/` | Public profile provider re-exports |
+
+See [INSTAGRAM_BULK_EXTRACTION.md](./INSTAGRAM_BULK_EXTRACTION.md) for allowed data, worker setup, review flow, and publish queue.
+
 ## Phase 16 — Discovery Engine
 
 Campaign-based automotive discovery that flows into the import pipeline.

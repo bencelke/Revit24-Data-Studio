@@ -203,6 +203,13 @@ export async function createImportJobFromBulkInput(
         metadata: { name: job.name },
       });
 
+      if (enriched.summary.validProfiles > 0) {
+        const { queueInstagramImportForExtraction } = await import(
+          "@/lib/services/instagramBulkExtractionService"
+        );
+        await queueInstagramImportForExtraction(job.id);
+      }
+
       return { job, records, dataMode: "firestore" };
     } catch (error) {
       await writeLog({
@@ -237,6 +244,13 @@ async function createMockImportJob(
     totalRecords: records.length,
     metadata: { name: job.name },
   });
+
+  if (parseResult.summary.validProfiles > 0) {
+    const { queueInstagramImportForExtraction } = await import(
+      "@/lib/services/instagramBulkExtractionService"
+    );
+    await queueInstagramImportForExtraction(job.id);
+  }
 
   return {
     job,

@@ -98,7 +98,8 @@ export function InstagramResultsTable({ rows, uploadStatuses, onRemove }: Instag
             <TableHead>Profile URL</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Upload Status</TableHead>
-            <TableHead>Error</TableHead>
+            <TableHead>Error Code</TableHead>
+            <TableHead>Error Message</TableHead>
             <TableHead>Extracted At</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
@@ -124,7 +125,10 @@ export function InstagramResultsTable({ rows, uploadStatuses, onRemove }: Instag
               <TableCell>
                 <UploadStatusBadge status={getUploadStatus(row, uploadStatuses)} />
               </TableCell>
-              <TableCell className="max-w-[140px] truncate text-muted-foreground">
+              <TableCell className="max-w-[140px] truncate font-mono text-xs text-muted-foreground">
+                {row.errorCode ?? "—"}
+              </TableCell>
+              <TableCell className="max-w-[220px] text-sm text-muted-foreground">
                 {row.error ?? "—"}
               </TableCell>
               <TableCell className="whitespace-nowrap text-xs text-muted-foreground">

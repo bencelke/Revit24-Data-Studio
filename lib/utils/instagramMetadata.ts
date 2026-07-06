@@ -91,12 +91,33 @@ export function extractDisplayNameFromMetadata(html: string, username: string): 
     }
   }
 
+  const twitterTitle = extractMetaContent(html, "twitter:title", "name");
+  if (twitterTitle) {
+    const parenMatch = twitterTitle.match(/^(.+?)\s*\(@/);
+    if (parenMatch?.[1]) return sanitizeInstagramText(parenMatch[1]);
+    return sanitizeInstagramText(twitterTitle);
+  }
+
   const fullNameMatch = html.match(/"full_name":"([^"]*)"/);
   if (fullNameMatch?.[1]) {
     return sanitizeInstagramText(decodeHtmlEntities(fullNameMatch[1]));
   }
 
-  return null;
+  return extractDisplayNameFromJsonLd(html);
+}
+
+function extractDisplayNameFromJsonLd(html: string): string | null {
+  const jsonLdMatch = html.match(
+    /<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/i,
+  );
+  if (!jsonLdMatch?.[1]) return null;
+
+  try {
+    const parsed = JSON.parse(jsonLdMatch[1]) as { name?: string };
+    return sanitizeInstagramText(parsed.name);
+  } catch {
+    return null;
+  }
 }
 
 export function extractWebsiteFromMetadata(html: string): string | null {
@@ -116,6 +137,9 @@ export function extractWebsiteFromMetadata(html: string): string | null {
 export function extractBioFromMetadata(html: string): string | null {
   const ogDescription = extractMetaContent(html, "og:description", "property");
   if (ogDescription) return ogDescription;
+
+  const twitterDescription = extractMetaContent(html, "twitter:description", "name");
+  if (twitterDescription) return twitterDescription;
 
   const biographyMatch = html.match(/"biography":"([^"]*)"/);
   if (biographyMatch?.[1]) {

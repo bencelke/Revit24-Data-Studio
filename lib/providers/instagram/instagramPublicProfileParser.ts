@@ -9,7 +9,10 @@ import {
   sanitizeInstagramText,
 } from "@/lib/utils/instagramMetadata";
 import type { InstagramPublicProfileData } from "./instagramPublicProfileTypes";
-import { createInstagramExtractorError } from "./instagramPublicProfileErrors";
+import {
+  createInstagramExtractorError,
+  normalizeExtractorErrorCode,
+} from "./instagramPublicProfileErrors";
 import type { InstagramExtractorError } from "./instagramPublicProfileErrors";
 
 export interface InstagramPublicProfileParseInput {
@@ -53,6 +56,7 @@ function detectBlocked(html: string, httpStatus: number): boolean {
     "checkpoint_required",
     "feedback_required",
     "Login • Instagram",
+    "login_required",
   ];
   return markers.some((marker) => html.includes(marker));
 }
@@ -67,7 +71,6 @@ function detectPrivateProfile(html: string): boolean {
     "This Account is Private",
     '"is_private":true',
     '"isPrivate":true',
-    "login_required",
   ];
   return markers.some((marker) => html.includes(marker));
 }
@@ -97,6 +100,16 @@ function readSharedDataBio(html: string): string | null {
   return typeof biography === "string" ? sanitizeInstagramText(biography) : null;
 }
 
+function hasStructuredMetadata(html: string): boolean {
+  return Boolean(
+    extractMetaContent(html, "og:title", "property") ||
+      extractMetaContent(html, "og:description", "property") ||
+      extractMetaContent(html, "twitter:title", "name") ||
+      html.includes("window._sharedData") ||
+      html.includes("application/ld+json"),
+  );
+}
+
 export function parseInstagramPublicProfilePage(
   input: InstagramPublicProfileParseInput,
 ): { success: true; data: InstagramPublicProfileData } | { success: false; error: InstagramExtractorError } {
@@ -105,21 +118,31 @@ export function parseInstagramPublicProfilePage(
   if (detectBlocked(html, httpStatus)) {
     return {
       success: false,
-      error: createInstagramExtractorError("blocked", "Instagram blocked the request."),
+      error: createInstagramExtractorError(
+        "instagram_blocked_request",
+        "Instagram blocked or limited the public profile request.",
+        { httpStatus, step: "detect_blocked" },
+      ),
     };
   }
 
   if (detectRateLimited(html, httpStatus)) {
     return {
       success: false,
-      error: createInstagramExtractorError("rate_limited", "Rate limited by Instagram."),
+      error: createInstagramExtractorError("rate_limited", "Rate limited by Instagram.", {
+        httpStatus,
+        step: "detect_rate_limit",
+      }),
     };
   }
 
   if (detectNotFound(html, httpStatus)) {
     return {
       success: false,
-      error: createInstagramExtractorError("profile_not_found", "Instagram profile not found."),
+      error: createInstagramExtractorError("profile_not_found", "Instagram profile not found.", {
+        httpStatus,
+        step: "detect_not_found",
+      }),
     };
   }
 
@@ -129,21 +152,18 @@ export function parseInstagramPublicProfilePage(
       error: createInstagramExtractorError(
         "profile_private",
         "Profile is private — only public metadata can be collected.",
+        { httpStatus, step: "detect_private" },
       ),
     };
   }
 
-  const ogTitle = extractMetaContent(html, "og:title", "property");
-  const hasStructuredMetadata = Boolean(
-    ogTitle || extractMetaContent(html, "og:description", "property") || html.includes("window._sharedData"),
-  );
-
-  if (!hasStructuredMetadata && html.length < 500) {
+  if (!hasStructuredMetadata(html) && html.length < 500) {
     return {
       success: false,
       error: createInstagramExtractorError(
         "profile_unavailable",
         "Profile page unavailable or returned empty content.",
+        { httpStatus, step: "parse_metadata" },
       ),
     };
   }
@@ -162,8 +182,9 @@ export function parseInstagramPublicProfilePage(
     return {
       success: false,
       error: createInstagramExtractorError(
-        "parse_failed",
-        "Could not parse public profile metadata from the page.",
+        "parse_failed_no_metadata",
+        "Could not find public profile metadata on the returned Instagram page.",
+        { httpStatus, step: "parse_metadata" },
       ),
     };
   }
@@ -207,3 +228,5 @@ export function buildMockInstagramPublicProfile(
     extractedAt,
   };
 }
+
+export { normalizeExtractorErrorCode };

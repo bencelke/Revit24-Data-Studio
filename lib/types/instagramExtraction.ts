@@ -37,6 +37,7 @@ export interface InstagramExtractionDocument {
   publicEmail: string | null;
   status: ExtractionStatus;
   error: string | null;
+  errorCode: string | null;
   extractedAt: string;
   createdAt: string;
   updatedAt: string;
@@ -54,6 +55,41 @@ export interface InstagramExtractionRunSummary {
   saved: number;
   updated: number;
   storageMode: StorageMode;
+}
+
+export interface ExtractionFailureDebug {
+  username: string;
+  fetchUrl: string;
+  errorCode: string;
+  message: string;
+  httpStatus: number | null;
+  step: string | null;
+  status: ExtractionStatus;
+}
+
+export interface InstagramExtractApiError {
+  code: string;
+  message: string;
+  httpStatus: number | null;
+  step: string | null;
+}
+
+export interface InstagramExtractApiResponse {
+  ok: boolean;
+  record: ExtractedInstagramProfile;
+  updated?: boolean;
+  result?: {
+    username: string;
+    profileUrl: string;
+    displayName: string | null;
+    profileImageUrl: string | null;
+    bio: string | null;
+    website: string | null;
+    publicEmail: string | null;
+    status: "success" | "failed" | "mock";
+    extractedAt: string;
+  };
+  error?: InstagramExtractApiError;
 }
 
 export interface InstagramExtractionProgress {

@@ -37,6 +37,7 @@ export function buildInstagramSimpleImportCsv(
       publicEmail: row.publicEmail,
       status: (row.status ?? row.extractionStatus ?? "completed") as SimpleExtractedProfile["status"],
       error: row.error,
+      errorCode: null,
       extractedAt: timestamp,
       createdAt: timestamp,
       updatedAt: timestamp,

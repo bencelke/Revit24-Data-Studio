@@ -17,6 +17,9 @@ import {
 import {
   findByUsername as findFirestoreByUsername,
 } from "@/lib/repositories/instagramExtractionsRepository";
+import { normalizeInstagramInput } from "@/lib/validation/instagramProfileInput";
+import { normalizeExtractorErrorCode } from "@/lib/providers/instagram/instagramPublicProfileErrors";
+import type { InstagramExtractionResult } from "@/lib/providers/instagram/instagramPublicProfileTypes";
 import { parseInstagramInput } from "@/lib/validation/instagramInput";
 import { buildMockProfileImageUrl } from "@/lib/utils/instagramMetadata";
 import type {
@@ -25,6 +28,7 @@ import type {
   ExtractionStatus,
   ExtractorPageData,
   ExtractorSettingsData,
+  InstagramExtractApiResponse,
   InstagramExtractionRunSummary,
   StorageMode,
 } from "@/lib/types/instagramExtraction";
@@ -53,6 +57,7 @@ function toCreateInput(params: {
   publicEmail: string | null;
   status: ExtractionStatus;
   error: string | null;
+  errorCode: string | null;
   extractedAt: string;
 }): CreateInstagramExtractionInput {
   const timestamp = new Date().toISOString();
@@ -67,6 +72,7 @@ function toCreateInput(params: {
     publicEmail: params.publicEmail,
     status: params.status,
     error: params.error,
+    errorCode: params.errorCode,
     extractedAt: params.extractedAt,
     createdAt: timestamp,
     updatedAt: timestamp,
@@ -76,11 +82,19 @@ function toCreateInput(params: {
 export async function extractAndUpsertSingleProfile(input: {
   username: string;
   profileUrl: string;
-}): Promise<{ record: ExtractedInstagramProfile; updated: boolean }> {
+}): Promise<{
+  record: ExtractedInstagramProfile;
+  updated: boolean;
+  providerResult: InstagramExtractionResult;
+}> {
   const rawInput = input.profileUrl || input.username;
   const providerResult = await instagramPublicProfileProvider.extractProfile(rawInput);
   const extractedAt = providerResult.data?.extractedAt ?? new Date().toISOString();
   const status = mapProviderStatus(providerResult.success, providerResult.mock);
+
+  const errorCode = providerResult.success
+    ? null
+    : normalizeExtractorErrorCode(providerResult.errorCode);
 
   const createInput = toCreateInput({
     username: providerResult.data?.username ?? input.username.toLowerCase(),
@@ -94,6 +108,7 @@ export async function extractAndUpsertSingleProfile(input: {
     publicEmail: providerResult.data?.publicEmail ?? null,
     status,
     error: providerResult.success ? null : providerResult.error,
+    errorCode,
     extractedAt,
   });
 
@@ -105,7 +120,79 @@ export async function extractAndUpsertSingleProfile(input: {
   }
 
   const { record, updated } = await upsertExtractionResult(createInput);
-  return { record, updated };
+  return { record, updated, providerResult };
+}
+
+export async function extractProfileForApi(profileInput: string): Promise<InstagramExtractApiResponse> {
+  const normalized = normalizeInstagramInput(profileInput.trim());
+
+  if (!normalized.username || !normalized.profileUrl || normalized.error) {
+    const timestamp = new Date().toISOString();
+    const failedRecord: ExtractedInstagramProfile = {
+      id: `invalid_${Date.now()}`,
+      source: "instagram",
+      username: profileInput.replace(/^@/, "").toLowerCase(),
+      profileUrl: normalized.profileUrl ?? "",
+      profileImageUrl: null,
+      displayName: null,
+      bio: null,
+      website: null,
+      publicEmail: null,
+      status: "failed",
+      error: normalized.error ?? "Invalid Instagram profile input.",
+      errorCode: "invalid_input",
+      extractedAt: timestamp,
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    };
+
+    return {
+      ok: false,
+      record: failedRecord,
+      error: {
+        code: "invalid_input",
+        message: normalized.error ?? "Invalid Instagram profile input.",
+        httpStatus: null,
+        step: "normalize_input",
+      },
+    };
+  }
+
+  const { record, updated, providerResult } = await extractAndUpsertSingleProfile({
+    username: normalized.username,
+    profileUrl: normalized.profileUrl,
+  });
+
+  if (record.status === "completed" || record.status === "mock") {
+    return {
+      ok: true,
+      record,
+      updated,
+      result: {
+        username: record.username,
+        profileUrl: record.profileUrl,
+        displayName: record.displayName,
+        profileImageUrl: record.profileImageUrl,
+        bio: record.bio,
+        website: record.website,
+        publicEmail: record.publicEmail,
+        status: record.status === "mock" ? "mock" : "success",
+        extractedAt: record.extractedAt,
+      },
+    };
+  }
+
+  return {
+    ok: false,
+    record,
+    updated,
+    error: {
+      code: record.errorCode ?? normalizeExtractorErrorCode(providerResult.errorCode),
+      message: record.error ?? providerResult.error ?? "Extraction failed.",
+      httpStatus: providerResult.diagnostics.httpStatus,
+      step: providerResult.diagnostics.step,
+    },
+  };
 }
 
 export async function runInstagramExtraction(

@@ -10,10 +10,31 @@ import { createPublicProfileError } from "./instagramPublicProfileTypes";
 import type { ProfileExtractionInput } from "@/lib/types/profile-extraction";
 
 function mapErrorCode(code: InstagramExtractorErrorCode): InstagramPublicProfileErrorCode {
-  if (code === "invalid_input" || code === "disabled" || code === "success") {
-    return "unknown_error";
+  switch (code) {
+    case "profile_not_found":
+    case "profile_private":
+    case "profile_unavailable":
+    case "parse_failed":
+    case "network_timeout":
+    case "rate_limited":
+    case "blocked":
+    case "unknown_error":
+      return code;
+    case "fetch_failed":
+    case "cors_error":
+      return "unknown_error";
+    case "instagram_blocked_request":
+      return "blocked";
+    case "parse_failed_no_metadata":
+    case "parse_failed_no_profile_image":
+      return "parse_failed";
+    case "server_error":
+    case "invalid_input":
+    case "disabled":
+    case "success":
+    default:
+      return "unknown_error";
   }
-  return code;
 }
 
 export class InstagramPublicProfileExtractor {
@@ -34,8 +55,12 @@ export class InstagramPublicProfileExtractor {
             "network_timeout",
             "rate_limited",
             "blocked",
+            "instagram_blocked_request",
             "profile_unavailable",
             "parse_failed",
+            "parse_failed_no_metadata",
+            "parse_failed_no_profile_image",
+            "fetch_failed",
             "unknown_error",
           ].includes(result.errorCode),
         ),

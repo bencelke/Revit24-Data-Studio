@@ -4,10 +4,16 @@ export const INSTAGRAM_EXTRACTOR_ERROR_CODES = [
   "profile_not_found",
   "profile_private",
   "profile_unavailable",
+  "fetch_failed",
+  "instagram_blocked_request",
+  "parse_failed_no_metadata",
+  "parse_failed_no_profile_image",
   "parse_failed",
   "network_timeout",
   "rate_limited",
   "blocked",
+  "cors_error",
+  "server_error",
   "disabled",
   "unknown_error",
 ] as const;
@@ -25,6 +31,12 @@ export interface InstagramPublicProfileData {
   extractedAt: string;
 }
 
+export interface InstagramExtractionDiagnostics {
+  fetchUrl: string;
+  httpStatus: number | null;
+  step: string | null;
+}
+
 export interface InstagramExtractionResult {
   success: boolean;
   data: InstagramPublicProfileData | null;
@@ -32,6 +44,7 @@ export interface InstagramExtractionResult {
   error: string | null;
   durationMs: number;
   mock: boolean;
+  diagnostics: InstagramExtractionDiagnostics;
 }
 
 export interface InstagramPublicProfileProvider {

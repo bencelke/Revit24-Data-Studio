@@ -10,8 +10,13 @@ import {
   buildMockInstagramPublicProfile,
   parseInstagramPublicProfilePage,
 } from "./instagramPublicProfileParser";
-import { createInstagramExtractorError, isRetryableExtractorError } from "./instagramPublicProfileErrors";
+import {
+  createInstagramExtractorError,
+  isRetryableExtractorError,
+  normalizeExtractorErrorCode,
+} from "./instagramPublicProfileErrors";
 import type {
+  InstagramExtractionDiagnostics,
   InstagramExtractionResult,
   InstagramPublicProfileProvider,
 } from "./instagramPublicProfileTypes";
@@ -23,15 +28,32 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function buildDiagnostics(
+  profileUrl: string,
+  httpStatus: number | null = null,
+  step: string | null = null,
+): InstagramExtractionDiagnostics {
+  return {
+    fetchUrl: profileUrl,
+    httpStatus,
+    step,
+  };
+}
+
 function buildResult(
-  partial: Omit<InstagramExtractionResult, "durationMs" | "mock">,
+  partial: Omit<InstagramExtractionResult, "durationMs" | "mock" | "diagnostics"> & {
+    diagnostics?: InstagramExtractionDiagnostics;
+  },
   startedAt: number,
   mock: boolean,
+  profileUrl: string,
 ): InstagramExtractionResult {
   return {
     ...partial,
+    errorCode: normalizeExtractorErrorCode(partial.errorCode),
     durationMs: Date.now() - startedAt,
     mock,
+    diagnostics: partial.diagnostics ?? buildDiagnostics(profileUrl),
   };
 }
 
@@ -47,6 +69,7 @@ async function fetchPublicProfile(profileUrl: string): Promise<Response> {
         "User-Agent": PUBLIC_USER_AGENT,
         Accept: "text/html,application/xhtml+xml",
         "Accept-Language": "en-US,en;q=0.9",
+        "Cache-Control": "no-cache",
       },
       signal: controller.signal,
       redirect: "follow",
@@ -68,9 +91,11 @@ export class InstagramPublicProfileProviderImpl implements InstagramPublicProfil
           data: null,
           errorCode: "invalid_input",
           error: normalized.error ?? "Invalid Instagram profile input.",
+          diagnostics: buildDiagnostics(input, null, "normalize_input"),
         },
         startedAt,
         false,
+        input,
       );
     }
 
@@ -82,9 +107,11 @@ export class InstagramPublicProfileProviderImpl implements InstagramPublicProfil
             data: buildMockInstagramPublicProfile(normalized.username, normalized.profileUrl),
             errorCode: "success",
             error: null,
+            diagnostics: buildDiagnostics(normalized.profileUrl),
           },
           startedAt,
           true,
+          normalized.profileUrl,
         );
       }
 
@@ -94,9 +121,11 @@ export class InstagramPublicProfileProviderImpl implements InstagramPublicProfil
           data: null,
           errorCode: "disabled",
           error: "Instagram extraction is disabled. Set ENABLE_INSTAGRAM_EXTRACTION=true.",
+          diagnostics: buildDiagnostics(normalized.profileUrl, null, "config"),
         },
         startedAt,
         false,
+        normalized.profileUrl,
       );
     }
 
@@ -119,7 +148,10 @@ export class InstagramPublicProfileProviderImpl implements InstagramPublicProfil
       }
 
       if (attemptResult.errorCode !== "success" && attemptResult.error) {
-        lastError = createInstagramExtractorError(attemptResult.errorCode, attemptResult.error);
+        lastError = createInstagramExtractorError(attemptResult.errorCode, attemptResult.error, {
+          httpStatus: attemptResult.diagnostics.httpStatus,
+          step: attemptResult.diagnostics.step,
+        });
       }
 
       if (!isRetryableExtractorError(lastError.code)) {
@@ -133,9 +165,15 @@ export class InstagramPublicProfileProviderImpl implements InstagramPublicProfil
         data: null,
         errorCode: lastError.code,
         error: lastError.message,
+        diagnostics: buildDiagnostics(
+          normalized.profileUrl,
+          lastError.httpStatus,
+          lastError.step,
+        ),
       },
       startedAt,
       false,
+      normalized.profileUrl,
     );
   }
 
@@ -165,9 +203,11 @@ export class InstagramPublicProfileProviderImpl implements InstagramPublicProfil
             data: null,
             errorCode: parsed.error.code,
             error: parsed.error.message,
+            diagnostics: buildDiagnostics(profileUrl, parsed.error.httpStatus, parsed.error.step),
           },
           startedAt,
           false,
+          profileUrl,
         );
       }
 
@@ -177,9 +217,11 @@ export class InstagramPublicProfileProviderImpl implements InstagramPublicProfil
           data: parsed.data,
           errorCode: "success",
           error: null,
+          diagnostics: buildDiagnostics(profileUrl, response.status, "parse_metadata"),
         },
         startedAt,
         false,
+        profileUrl,
       );
     } catch (error) {
       const message = error instanceof Error ? error.message : "Network request failed.";
@@ -190,10 +232,12 @@ export class InstagramPublicProfileProviderImpl implements InstagramPublicProfil
           success: false,
           data: null,
           errorCode: isTimeout ? "network_timeout" : "unknown_error",
-          error: message,
+          error: isTimeout ? "Instagram profile request timed out." : message,
+          diagnostics: buildDiagnostics(profileUrl, null, "fetch_profile"),
         },
         startedAt,
         false,
+        profileUrl,
       );
     }
   }

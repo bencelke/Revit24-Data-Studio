@@ -47,21 +47,34 @@ export function extractMetaContent(
   return null;
 }
 
-export function extractProfileImageFromMetadata(html: string): string | null {
+export function extractProfileImageFromHtml(html: string): string | null {
   const ogImage = extractMetaContent(html, "og:image", "property");
   if (ogImage) return ogImage;
 
-  const sharedMatch = html.match(/"profile_pic_url_hd":"([^"]+)"/);
+  const twitterImage = extractMetaContent(html, "twitter:image", "name");
+  if (twitterImage) return twitterImage;
+
+  const sharedHdMatch = html.match(/"profile_pic_url_hd":"([^"]+)"/);
+  if (sharedHdMatch?.[1]) {
+    return sanitizeInstagramText(sharedHdMatch[1].replace(/\\u0026/g, "&"));
+  }
+
+  const sharedMatch = html.match(/"profile_pic_url":"([^"]+)"/);
   if (sharedMatch?.[1]) {
     return sanitizeInstagramText(sharedMatch[1].replace(/\\u0026/g, "&"));
   }
 
-  const fallbackMatch = html.match(/"profile_pic_url":"([^"]+)"/);
-  if (fallbackMatch?.[1]) {
-    return sanitizeInstagramText(fallbackMatch[1].replace(/\\u0026/g, "&"));
-  }
-
   return null;
+}
+
+/** @deprecated Use extractProfileImageFromHtml */
+export function extractProfileImageFromMetadata(html: string): string | null {
+  return extractProfileImageFromHtml(html);
+}
+
+export function buildMockProfileImageUrl(username: string): string {
+  const normalized = username.trim().toLowerCase();
+  return `https://ui-avatars.com/api/?name=${encodeURIComponent(normalized)}&background=1a1a1a&color=ff5a1f&size=128`;
 }
 
 export function extractDisplayNameFromMetadata(html: string, username: string): string | null {

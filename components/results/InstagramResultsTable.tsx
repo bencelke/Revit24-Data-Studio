@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
 import { Copy, ExternalLink, Trash2 } from "lucide-react";
 import {
   Table,
@@ -13,6 +12,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { ProfileAvatar } from "./ProfileAvatar";
 import type { ExtractedInstagramProfile } from "@/lib/types/instagramExtraction";
 
 interface InstagramResultsTableProps {
@@ -66,20 +66,7 @@ export function InstagramResultsTable({ rows, onRemove }: InstagramResultsTableP
           {rows.map((row) => (
             <TableRow key={row.id}>
               <TableCell>
-                {row.profileImageUrl ? (
-                  <Image
-                    src={row.profileImageUrl}
-                    alt={row.username}
-                    width={32}
-                    height={32}
-                    className="size-8 rounded-full object-cover"
-                    unoptimized
-                  />
-                ) : (
-                  <div className="flex size-8 items-center justify-center rounded-full bg-muted text-xs font-medium text-muted-foreground">
-                    {row.username.slice(0, 2).toUpperCase()}
-                  </div>
-                )}
+                <ProfileAvatar username={row.username} profileImageUrl={row.profileImageUrl} />
               </TableCell>
               <TableCell className="font-medium">@{row.username}</TableCell>
               <TableCell>{row.displayName ?? "—"}</TableCell>

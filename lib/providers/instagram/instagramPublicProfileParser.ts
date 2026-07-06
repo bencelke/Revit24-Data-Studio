@@ -3,8 +3,9 @@ import {
   extractDisplayNameFromMetadata,
   extractEmailFromText,
   extractMetaContent,
-  extractProfileImageFromMetadata,
+  extractProfileImageFromHtml,
   extractWebsiteFromMetadata,
+  buildMockProfileImageUrl,
   sanitizeInstagramText,
 } from "@/lib/utils/instagramMetadata";
 import type { InstagramPublicProfileData } from "./instagramPublicProfileTypes";
@@ -153,7 +154,7 @@ export function parseInstagramPublicProfilePage(
     extractMetaContent(html, "og:description", "property");
 
   const displayName = extractDisplayNameFromMetadata(html, username);
-  const profileImageUrl = extractProfileImageFromMetadata(html);
+  const profileImageUrl = extractProfileImageFromHtml(html);
   const website = extractWebsiteFromMetadata(html);
   const publicEmail = extractEmailFromText(bio);
 
@@ -199,7 +200,7 @@ export function buildMockInstagramPublicProfile(
     username,
     profileUrl,
     displayName,
-    profileImageUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=1a1a1a&color=ff5a1f`,
+    profileImageUrl: buildMockProfileImageUrl(username),
     bio,
     website: null,
     publicEmail: extractEmailFromText(bio),

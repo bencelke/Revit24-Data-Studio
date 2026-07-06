@@ -17,6 +17,7 @@ import {
   findByUsername as findFirestoreByUsername,
 } from "@/lib/repositories/instagramExtractionsRepository";
 import { parseInstagramInput } from "@/lib/validation/instagramInput";
+import { buildMockProfileImageUrl } from "@/lib/utils/instagramMetadata";
 import type {
   CreateInstagramExtractionInput,
   ExtractedInstagramProfile,
@@ -83,7 +84,9 @@ export async function extractAndUpsertSingleProfile(input: {
   const createInput = toCreateInput({
     username: providerResult.data?.username ?? input.username.toLowerCase(),
     profileUrl: providerResult.data?.profileUrl ?? input.profileUrl,
-    profileImageUrl: providerResult.data?.profileImageUrl ?? null,
+    profileImageUrl:
+      providerResult.data?.profileImageUrl ??
+      (providerResult.mock ? buildMockProfileImageUrl(input.username) : null),
     displayName: providerResult.data?.displayName ?? null,
     bio: providerResult.data?.bio ?? null,
     website: providerResult.data?.website ?? null,

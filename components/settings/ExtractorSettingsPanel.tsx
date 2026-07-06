@@ -57,20 +57,16 @@ export function ExtractorSettingsPanel({ settings }: ExtractorSettingsPanelProps
       <Card className="border-border bg-card shadow-none">
         <CardHeader>
           <CardTitle className="text-base font-semibold">Instagram extraction</CardTitle>
-          <CardDescription>Public Instagram profile extractor</CardDescription>
+          <CardDescription>Queued on Vercel, processed by local worker</CardDescription>
         </CardHeader>
         <CardContent className="space-y-0">
-          <Row
-            label="Instagram extraction"
-            value={settings.extractionEnabled ? "Enabled" : "Disabled"}
-          />
-          <Row label="Extraction mode" value={settings.mode} />
-          <Row label="Delay between profiles" value={`${settings.extractionDelayMs} ms`} />
-          <Row label="Max retries" value={String(settings.extractionMaxRetries)} />
+          <Row label="Queue collection" value="instagram_extraction_queue" />
+          <Row label="Results collection" value="instagram_extractions" />
+          <Row label="Worker command" value="npm run worker:instagram" />
+          <Row label="Worker delay" value={`${settings.workerDelayMs} ms`} />
+          <Row label="Worker max retries" value={String(settings.workerMaxRetries)} />
           <div className="pt-4">
-            <Badge variant={settings.extractionEnabled ? "default" : "outline"}>
-              {settings.extractionEnabled ? "Live extraction" : "Mock extraction"}
-            </Badge>
+            <Badge variant="outline">Local worker extraction</Badge>
           </div>
         </CardContent>
       </Card>
@@ -90,11 +86,11 @@ export function ExtractorSettingsPanel({ settings }: ExtractorSettingsPanelProps
           <p>NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET</p>
           <p>NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID</p>
           <p>NEXT_PUBLIC_FIREBASE_APP_ID</p>
-          <p className="mt-3">ENABLE_INSTAGRAM_EXTRACTION=true</p>
-          <p>NEXT_PUBLIC_ENABLE_INSTAGRAM_EXTRACTION=true</p>
-          <p>INSTAGRAM_EXTRACTION_DELAY_MS=5000</p>
-          <p>INSTAGRAM_EXTRACTION_TIMEOUT_MS=30000</p>
-          <p>INSTAGRAM_EXTRACTION_MAX_RETRIES=1</p>
+          <p className="mt-3">ENABLE_INSTAGRAM_EXTRACTION=true (local worker only)</p>
+          <p>INSTAGRAM_WORKER_BATCH_SIZE=1</p>
+          <p>INSTAGRAM_WORKER_DELAY_MS=5000</p>
+          <p>INSTAGRAM_WORKER_MAX_RETRIES=1</p>
+          <p>INSTAGRAM_WORKER_TIMEOUT_MS=30000</p>
         </CardContent>
       </Card>
     </div>

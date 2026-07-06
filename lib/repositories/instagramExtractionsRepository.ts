@@ -37,6 +37,12 @@ function mapExtractionDoc(id: string, data: DocumentData): InstagramExtractionDo
     status: (data.status as ExtractionStatus) ?? "completed",
     error: data.error != null ? String(data.error) : null,
     errorCode: data.errorCode != null ? String(data.errorCode) : null,
+    errorMessage:
+      data.errorMessage != null
+        ? String(data.errorMessage)
+        : data.error != null
+          ? String(data.error)
+          : null,
     extractedAt: timestampToIso(data.extractedAt),
     createdAt: timestampToIso(data.createdAt),
     updatedAt: timestampToIso(data.updatedAt),
@@ -56,6 +62,7 @@ function buildPayload(input: CreateInstagramExtractionInput) {
     status: input.status,
     error: input.error,
     errorCode: input.errorCode,
+    errorMessage: input.errorMessage ?? input.error,
     extractedAt: isoToTimestamp(input.extractedAt),
     createdAt: isoToTimestamp(input.createdAt),
     updatedAt: isoToTimestamp(input.updatedAt),
@@ -82,6 +89,7 @@ async function upsertExtractionResultFirestore(
       status: input.status,
       error: input.error,
       errorCode: input.errorCode,
+      errorMessage: input.errorMessage ?? input.error,
       extractedAt: isoToTimestamp(input.extractedAt),
       updatedAt: isoToTimestamp(input.updatedAt),
     };

@@ -11,20 +11,20 @@ interface InstagramExtractorFormProps {
   value: string;
   onChange: (value: string) => void;
   onPreview: () => void;
-  onExtract: () => void;
+  onCreateJob: () => void;
   onClear: () => void;
-  isExtracting?: boolean;
-  canExtract?: boolean;
+  isQueueing?: boolean;
+  canCreateJob?: boolean;
 }
 
 export function InstagramExtractorForm({
   value,
   onChange,
   onPreview,
-  onExtract,
+  onCreateJob,
   onClear,
-  isExtracting,
-  canExtract,
+  isQueueing,
+  canCreateJob,
 }: InstagramExtractorFormProps) {
   return (
     <div className="space-y-4 rounded-lg border border-border bg-card p-4">
@@ -48,8 +48,8 @@ export function InstagramExtractorForm({
         <Button type="button" variant="secondary" onClick={onPreview} disabled={!value.trim()}>
           Preview Links
         </Button>
-        <Button type="button" onClick={onExtract} disabled={!canExtract || isExtracting}>
-          {isExtracting ? "Extracting..." : "Start Extraction"}
+        <Button type="button" onClick={onCreateJob} disabled={!canCreateJob || isQueueing}>
+          {isQueueing ? "Queueing..." : "Create Extraction Job"}
         </Button>
         <Button type="button" variant="outline" onClick={onClear}>
           Clear

@@ -13,12 +13,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ProfileAvatar } from "./ProfileAvatar";
-import type { ExtractedInstagramProfile, UploadStatus } from "@/lib/types/instagramExtraction";
+import type { UploadStatus } from "@/lib/types/instagramExtraction";
+import type { InstagramResultsViewRow } from "@/lib/types/instagramExtractionQueue";
 
 interface InstagramResultsTableProps {
-  rows: ExtractedInstagramProfile[];
+  rows: InstagramResultsViewRow[];
   uploadStatuses: Record<string, UploadStatus>;
-  onRemove: (id: string) => void;
+  onRemove: (id: string, extractionId: string | null) => void;
 }
 
 async function copyText(value: string) {
@@ -29,15 +30,15 @@ async function copyText(value: string) {
   }
 }
 
-/** Deterministic UTC display — identical on server and client. */
-function formatExtractedAt(iso: string): string {
+function formatExtractedAt(iso: string | null): string {
+  if (!iso) return "—";
   const match = iso.match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})/);
   if (!match) return iso;
   const [, year, month, day, hour, minute] = match;
   return `${year}-${month}-${day} ${hour}:${minute} UTC`;
 }
 
-function getUploadStatus(row: ExtractedInstagramProfile, uploadStatuses: Record<string, UploadStatus>): UploadStatus {
+function getUploadStatus(row: InstagramResultsViewRow, uploadStatuses: Record<string, UploadStatus>): UploadStatus {
   if (uploadStatuses[row.id]) {
     return uploadStatuses[row.id];
   }
@@ -68,6 +69,22 @@ function UploadStatusBadge({ status }: { status: UploadStatus }) {
   return <Badge variant="outline">{uploadStatusLabel(status)}</Badge>;
 }
 
+function StatusBadge({ status }: { status: string }) {
+  if (status === "failed") {
+    return <Badge variant="destructive">{status}</Badge>;
+  }
+
+  if (status === "pending" || status === "running") {
+    return <Badge variant="outline">{status}</Badge>;
+  }
+
+  if (status === "success" || status === "completed" || status === "mock") {
+    return <Badge variant="default">{status}</Badge>;
+  }
+
+  return <Badge variant="outline">{status}</Badge>;
+}
+
 export function InstagramResultsTable({ rows, uploadStatuses, onRemove }: InstagramResultsTableProps) {
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
@@ -80,7 +97,7 @@ export function InstagramResultsTable({ rows, uploadStatuses, onRemove }: Instag
   if (rows.length === 0) {
     return (
       <div className="rounded-lg border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
-        No results yet. Extract profiles from Instagram Extractor first.
+        No results yet. Create an extraction job from Instagram Extractor first.
       </div>
     );
   }
@@ -95,11 +112,9 @@ export function InstagramResultsTable({ rows, uploadStatuses, onRemove }: Instag
             <TableHead>Display Name</TableHead>
             <TableHead>Public Email</TableHead>
             <TableHead>Website</TableHead>
-            <TableHead>Profile URL</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Upload Status</TableHead>
-            <TableHead>Error Code</TableHead>
-            <TableHead>Error Message</TableHead>
+            <TableHead>Error</TableHead>
             <TableHead>Extracted At</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
@@ -114,22 +129,21 @@ export function InstagramResultsTable({ rows, uploadStatuses, onRemove }: Instag
               <TableCell>{row.displayName ?? "—"}</TableCell>
               <TableCell>{row.publicEmail ?? "—"}</TableCell>
               <TableCell className="max-w-[140px] truncate">{row.website ?? "—"}</TableCell>
-              <TableCell className="max-w-[160px] truncate text-muted-foreground">
-                {row.profileUrl}
-              </TableCell>
               <TableCell>
-                <Badge variant={row.status === "failed" ? "destructive" : "outline"}>
-                  {row.status}
-                </Badge>
+                <StatusBadge status={row.status} />
               </TableCell>
               <TableCell>
                 <UploadStatusBadge status={getUploadStatus(row, uploadStatuses)} />
               </TableCell>
-              <TableCell className="max-w-[140px] truncate font-mono text-xs text-muted-foreground">
-                {row.errorCode ?? "—"}
-              </TableCell>
-              <TableCell className="max-w-[220px] text-sm text-muted-foreground">
-                {row.error ?? "—"}
+              <TableCell className="max-w-[260px] text-sm text-muted-foreground">
+                {row.errorCode ? (
+                  <span className="font-mono text-xs">{row.errorCode}</span>
+                ) : null}
+                {row.errorMessage ? (
+                  <p className={row.errorCode ? "mt-1" : undefined}>{row.errorMessage}</p>
+                ) : (
+                  "—"
+                )}
               </TableCell>
               <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
                 {formatExtractedAt(row.extractedAt)}
@@ -162,14 +176,16 @@ export function InstagramResultsTable({ rows, uploadStatuses, onRemove }: Instag
                       <Copy className="size-4" />
                     </Button>
                   ) : null}
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    onClick={() => onRemove(row.id)}
-                    title="Delete row"
-                  >
-                    <Trash2 className="size-4" />
-                  </Button>
+                  {row.extractionId ? (
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      onClick={() => onRemove(row.id, row.extractionId)}
+                      title="Delete result"
+                    >
+                      <Trash2 className="size-4" />
+                    </Button>
+                  ) : null}
                 </div>
                 {copiedId?.startsWith(row.id) ? (
                   <p className="mt-1 text-right text-xs text-muted-foreground">Copied</p>

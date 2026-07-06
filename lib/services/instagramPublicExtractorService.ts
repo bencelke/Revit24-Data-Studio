@@ -4,6 +4,10 @@ import {
   isInstagramExtractionEnabled,
   shouldUseInstagramMockExtraction,
 } from "@/lib/config/instagramExtractor";
+import {
+  getInstagramWorkerDelayMs,
+  getInstagramWorkerMaxRetries,
+} from "@/lib/config/instagramWorker";
 import { isFirebaseConfigured, FIRESTORE_COLLECTIONS } from "@/lib/firebase/config";
 import { getFirebaseDiagnostics } from "@/lib/firebase/status";
 import { instagramPublicProfileProvider } from "@/lib/providers/instagram";
@@ -58,6 +62,7 @@ function toCreateInput(params: {
   status: ExtractionStatus;
   error: string | null;
   errorCode: string | null;
+  errorMessage: string | null;
   extractedAt: string;
 }): CreateInstagramExtractionInput {
   const timestamp = new Date().toISOString();
@@ -73,6 +78,7 @@ function toCreateInput(params: {
     status: params.status,
     error: params.error,
     errorCode: params.errorCode,
+    errorMessage: params.errorMessage ?? params.error,
     extractedAt: params.extractedAt,
     createdAt: timestamp,
     updatedAt: timestamp,
@@ -109,6 +115,7 @@ export async function extractAndUpsertSingleProfile(input: {
     status,
     error: providerResult.success ? null : providerResult.error,
     errorCode,
+    errorMessage: providerResult.success ? null : providerResult.error,
     extractedAt,
   });
 
@@ -141,6 +148,7 @@ export async function extractProfileForApi(profileInput: string): Promise<Instag
       status: "failed",
       error: normalized.error ?? "Invalid Instagram profile input.",
       errorCode: "invalid_input",
+      errorMessage: normalized.error ?? "Invalid Instagram profile input.",
       extractedAt: timestamp,
       createdAt: timestamp,
       updatedAt: timestamp,
@@ -299,6 +307,8 @@ export async function getExtractorSettingsData(): Promise<ExtractorSettingsData>
     extractionEnabled: extractionLive,
     extractionDelayMs: INSTAGRAM_EXTRACTOR_CONFIG.delayMs,
     extractionMaxRetries: INSTAGRAM_EXTRACTOR_CONFIG.maxRetries,
+    workerDelayMs: getInstagramWorkerDelayMs(),
+    workerMaxRetries: getInstagramWorkerMaxRetries(),
     importQueueCollection: FIRESTORE_COLLECTIONS.revit24_import_queue,
     deployment: "Vercel",
   };

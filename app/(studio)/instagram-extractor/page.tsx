@@ -15,7 +15,7 @@ export default async function InstagramExtractorPage() {
   return (
     <AppShell
       title="Instagram Extractor"
-      description="Paste Instagram profile links and extract public profile metadata."
+      description="Paste Instagram profile links to queue extraction jobs. Run the local worker on your Mac to process them."
     >
       <InstagramExtractorClient {...data} />
     </AppShell>

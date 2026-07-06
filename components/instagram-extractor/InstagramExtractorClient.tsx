@@ -4,25 +4,17 @@ import { useState } from "react";
 import Link from "next/link";
 import { InstagramExtractorForm } from "./InstagramExtractorForm";
 import { InstagramExtractorSummary } from "./InstagramExtractorSummary";
-import { InstagramExtractionProgressPanel } from "./InstagramExtractionProgressPanel";
-import { ExtractionFailureDebugPanel } from "./ExtractionFailureDebugPanel";
 import { FirestoreStatusBanner } from "@/components/imports/DataModeBadge";
 import { Button } from "@/components/ui/button";
 import { parseInstagramInput } from "@/lib/validation/instagramInput";
 import {
-  listExtractionResultsSync,
-  saveExtractionResults,
-  usesLocalStorage,
-} from "@/lib/repositories/instagramExtractionStorage";
+  createLocalQueueItems,
+  saveQueueItems,
+  usesLocalQueueStorage,
+} from "@/lib/repositories/instagramExtractionQueueStorage";
 import { MOCK_MODE_WARNING, getErrorMessage } from "@/lib/errors/app-errors";
-import type {
-  ExtractionFailureDebug,
-  ExtractorPageData,
-  InstagramExtractApiResponse,
-  InstagramExtractionProgress,
-  InstagramExtractionRunSummary,
-  InstagramParseSummary,
-} from "@/lib/types/instagramExtraction";
+import type { ExtractorPageData, InstagramParseSummary } from "@/lib/types/instagramExtraction";
+import type { InstagramQueueJobSummary } from "@/lib/types/instagramExtractionQueue";
 import { Badge } from "@/components/ui/badge";
 
 const EMPTY_SUMMARY: InstagramParseSummary = {
@@ -30,15 +22,7 @@ const EMPTY_SUMMARY: InstagramParseSummary = {
   valid: 0,
   duplicate: 0,
   invalid: 0,
-};
-
-const EMPTY_PROGRESS: InstagramExtractionProgress = {
-  current: 0,
-  total: 0,
-  username: "",
-  succeeded: 0,
-  failed: 0,
-  statusMessage: "",
+  queued: 0,
 };
 
 type InstagramExtractorClientProps = ExtractorPageData;
@@ -46,24 +30,19 @@ type InstagramExtractorClientProps = ExtractorPageData;
 export function InstagramExtractorClient({
   firebaseConnected,
   storageMode,
-  extractorMode,
-  extractionEnabled,
-  extractionDelayMs,
 }: InstagramExtractorClientProps) {
   const [input, setInput] = useState("");
   const [summary, setSummary] = useState<InstagramParseSummary>(EMPTY_SUMMARY);
   const [validProfiles, setValidProfiles] = useState<
     { username: string; profileUrl: string }[]
   >([]);
-  const [isExtracting, setIsExtracting] = useState(false);
+  const [isQueueing, setIsQueueing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [runSummary, setRunSummary] = useState<InstagramExtractionRunSummary | null>(null);
-  const [progress, setProgress] = useState<InstagramExtractionProgress>(EMPTY_PROGRESS);
-  const [failureDebug, setFailureDebug] = useState<ExtractionFailureDebug[]>([]);
+  const [queueSummary, setQueueSummary] = useState<InstagramQueueJobSummary | null>(null);
 
   function handlePreview() {
     const parsed = parseInstagramInput(input);
-    setSummary(parsed.summary);
+    setSummary({ ...parsed.summary, queued: summary.queued ?? 0 });
     setValidProfiles(
       parsed.rows
         .filter((row) => row.validationStatus === "valid" && row.username && row.profileUrl)
@@ -73,9 +52,7 @@ export function InstagramExtractorClient({
         })),
     );
     setError(null);
-    setRunSummary(null);
-    setProgress(EMPTY_PROGRESS);
-    setFailureDebug([]);
+    setQueueSummary(null);
   }
 
   function resolveProfiles(): { username: string; profileUrl: string }[] {
@@ -84,7 +61,7 @@ export function InstagramExtractorClient({
     }
 
     const parsed = parseInstagramInput(input);
-    setSummary(parsed.summary);
+    setSummary({ ...parsed.summary, queued: summary.queued ?? 0 });
     const profiles = parsed.rows
       .filter((row) => row.validationStatus === "valid" && row.username && row.profileUrl)
       .map((row) => ({
@@ -95,148 +72,66 @@ export function InstagramExtractorClient({
     return profiles;
   }
 
-  async function handleExtract() {
+  async function handleCreateJob() {
     const profiles = resolveProfiles();
 
     if (profiles.length === 0) {
-      setError("No valid profiles to extract. Check your input.");
+      setError("No valid profiles to queue. Check your input.");
       return;
     }
 
-    setIsExtracting(true);
+    setIsQueueing(true);
     setError(null);
-    setRunSummary(null);
-    setFailureDebug([]);
-
-    let succeeded = 0;
-    let failed = 0;
-    let saved = 0;
-    let updated = 0;
-    const failures: ExtractionFailureDebug[] = [];
+    setQueueSummary(null);
 
     try {
-      for (let index = 0; index < profiles.length; index += 1) {
-        const profile = profiles[index];
-        setProgress({
-          current: index + 1,
-          total: profiles.length,
-          username: profile.username,
-          succeeded,
-          failed,
-          statusMessage: `Extracting @${profile.username}...`,
-        });
-
-        const response = await fetch("/api/instagram-extractor/extract", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ profile: profile.username }),
-        });
-
-        const payload = (await response.json()) as InstagramExtractApiResponse & {
-          error?: string;
+      if (usesLocalQueueStorage()) {
+        const timestamp = new Date().toISOString();
+        const inputs = profiles.map((profile) => ({
+          username: profile.username.toLowerCase(),
+          profileUrl: profile.profileUrl,
+          status: "pending" as const,
+          createdAt: timestamp,
+          updatedAt: timestamp,
+          startedAt: null,
+          completedAt: null,
+          attempts: 0,
+          errorCode: null,
+          errorMessage: null,
+        }));
+        const records = createLocalQueueItems(inputs);
+        saveQueueItems(records);
+        const result: InstagramQueueJobSummary = {
+          queued: records.length,
+          skipped: 0,
+          storageMode: "mock",
         };
-
-        if (!payload.record) {
-          failed += 1;
-          failures.push({
-            username: profile.username,
-            fetchUrl: profile.profileUrl,
-            errorCode: payload.error?.code ?? "server_error",
-            message: payload.error?.message ?? payload.error ?? `Failed to extract @${profile.username}.`,
-            httpStatus: payload.error?.httpStatus ?? null,
-            step: payload.error?.step ?? null,
-            status: "failed",
-          });
-          setProgress((current) => ({
-            ...current,
-            failed,
-            statusMessage: payload.error?.message ?? `Failed to extract @${profile.username}.`,
-          }));
-          continue;
-        }
-
-        if (usesLocalStorage()) {
-          const hadExisting = listExtractionResultsSync().some(
-            (row) => row.username.toLowerCase() === payload.record.username.toLowerCase(),
-          );
-          saveExtractionResults([payload.record]);
-          if (hadExisting) {
-            updated += 1;
-          } else {
-            saved += 1;
-          }
-        } else if (payload.updated) {
-          updated += 1;
-        } else {
-          saved += 1;
-        }
-
-        if (payload.record.status === "completed" || payload.record.status === "mock") {
-          succeeded += 1;
-          setProgress({
-            current: index + 1,
-            total: profiles.length,
-            username: profile.username,
-            succeeded,
-            failed,
-            statusMessage: `Saved @${profile.username}`,
-          });
-        } else {
-          failed += 1;
-          failures.push({
-            username: payload.record.username,
-            fetchUrl: payload.record.profileUrl,
-            errorCode: payload.error?.code ?? payload.record.errorCode ?? "unknown_error",
-            message:
-              payload.error?.message ??
-              payload.record.error ??
-              `Failed to extract @${profile.username}.`,
-            httpStatus: payload.error?.httpStatus ?? null,
-            step: payload.error?.step ?? null,
-            status: "failed",
-          });
-          setProgress({
-            current: index + 1,
-            total: profiles.length,
-            username: profile.username,
-            succeeded,
-            failed,
-            statusMessage:
-              payload.error?.message ??
-              payload.record.error ??
-              `@${profile.username}: ${payload.record.errorCode ?? "failed"}`,
-          });
-        }
-
-        if (index < profiles.length - 1 && extractionDelayMs > 0) {
-          await new Promise((resolve) => setTimeout(resolve, extractionDelayMs));
-        }
+        setQueueSummary(result);
+        setSummary((current) => ({ ...current, queued: result.queued }));
+        return;
       }
 
-      setFailureDebug(failures);
+      const response = await fetch("/api/instagram-extractor/queue", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ profiles }),
+      });
 
-      const finalSummary: InstagramExtractionRunSummary = {
-        total: profiles.length,
-        succeeded,
-        failed,
-        saved,
-        updated,
-        storageMode,
+      const payload = (await response.json()) as {
+        summary?: InstagramQueueJobSummary;
+        error?: string;
       };
 
-      setRunSummary(finalSummary);
-      setProgress({
-        current: profiles.length,
-        total: profiles.length,
-        username: profiles[profiles.length - 1]?.username ?? "",
-        succeeded,
-        failed,
-        statusMessage: `Finished. ${succeeded} succeeded, ${failed} failed.`,
-      });
-    } catch (extractError) {
-      setError(getErrorMessage(extractError));
+      if (!response.ok || !payload.summary) {
+        throw new Error(payload.error ?? "Failed to create extraction job.");
+      }
+
+      setQueueSummary(payload.summary);
+      setSummary((current) => ({ ...current, queued: payload.summary?.queued ?? 0 }));
+    } catch (queueError) {
+      setError(getErrorMessage(queueError));
     } finally {
-      setIsExtracting(false);
+      setIsQueueing(false);
     }
   }
 
@@ -245,9 +140,7 @@ export function InstagramExtractorClient({
     setSummary(EMPTY_SUMMARY);
     setValidProfiles([]);
     setError(null);
-    setRunSummary(null);
-    setProgress(EMPTY_PROGRESS);
-    setFailureDebug([]);
+    setQueueSummary(null);
   }
 
   return (
@@ -256,15 +149,7 @@ export function InstagramExtractorClient({
         <Badge variant={storageMode === "live" ? "default" : "outline"}>
           {storageMode === "live" ? "Firebase Live Mode" : "Mock localStorage"}
         </Badge>
-        <Badge variant={extractorMode === "live" ? "default" : "outline"}>
-          {extractorMode === "live" ? "Live extraction" : "Mock extraction"}
-        </Badge>
-        {!extractionEnabled ? (
-          <span className="rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-xs font-medium text-amber-400">
-            Set ENABLE_INSTAGRAM_EXTRACTION=true or NEXT_PUBLIC_ENABLE_INSTAGRAM_EXTRACTION=true in
-            Vercel, then redeploy
-          </span>
-        ) : null}
+        <Badge variant="outline">Local worker extraction</Badge>
       </div>
 
       {storageMode === "mock" ? (
@@ -279,7 +164,7 @@ export function InstagramExtractorClient({
           title="Firebase Connected"
           description={
             firebaseConnected
-              ? "Extracted profiles are saved to the instagram_extractions collection."
+              ? "Profiles are queued in instagram_extraction_queue. Run npm run worker:instagram on your Mac to process them."
               : undefined
           }
         />
@@ -289,32 +174,29 @@ export function InstagramExtractorClient({
         value={input}
         onChange={setInput}
         onPreview={handlePreview}
-        onExtract={handleExtract}
+        onCreateJob={handleCreateJob}
         onClear={handleClear}
-        isExtracting={isExtracting}
-        canExtract={input.trim().length > 0}
+        isQueueing={isQueueing}
+        canCreateJob={input.trim().length > 0}
       />
 
       <InstagramExtractorSummary summary={summary} />
 
-      {isExtracting || progress.current > 0 ? (
-        <InstagramExtractionProgressPanel progress={progress} isRunning={isExtracting} />
-      ) : null}
-
-      {runSummary ? (
+      {queueSummary ? (
         <div className="space-y-3 rounded-lg border border-border bg-card px-4 py-3">
           <p className="text-sm text-muted-foreground">
-            Extraction complete: {runSummary.succeeded} succeeded, {runSummary.failed} failed.
-            {runSummary.saved > 0 ? ` ${runSummary.saved} new record(s) saved.` : null}
-            {runSummary.updated > 0 ? ` ${runSummary.updated} record(s) updated.` : null}
+            Queued {queueSummary.queued} profile{queueSummary.queued === 1 ? "" : "s"}.
+            {queueSummary.skipped > 0
+              ? ` ${queueSummary.skipped} already pending and skipped.`
+              : null}{" "}
+            Run the local worker to process them.
           </p>
+          <p className="font-mono text-xs text-muted-foreground">npm run worker:instagram</p>
           <Button nativeButton={false} render={<Link href="/results" />}>
             View Results
           </Button>
         </div>
       ) : null}
-
-      <ExtractionFailureDebugPanel failures={failureDebug} />
 
       {error ? (
         <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">

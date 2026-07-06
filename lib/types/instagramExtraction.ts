@@ -23,6 +23,7 @@ export interface InstagramParseSummary {
   valid: number;
   duplicate: number;
   invalid: number;
+  queued?: number;
 }
 
 export interface InstagramExtractionDocument {
@@ -38,6 +39,7 @@ export interface InstagramExtractionDocument {
   status: ExtractionStatus;
   error: string | null;
   errorCode: string | null;
+  errorMessage: string | null;
   extractedAt: string;
   createdAt: string;
   updatedAt: string;
@@ -119,6 +121,8 @@ export interface ExtractorSettingsData {
   extractionEnabled: boolean;
   extractionDelayMs: number;
   extractionMaxRetries: number;
+  workerDelayMs: number;
+  workerMaxRetries: number;
   importQueueCollection: string;
   deployment: string;
 }

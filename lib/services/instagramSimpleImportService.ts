@@ -29,6 +29,8 @@ export function buildInstagramSimpleImportCsv(
     profileUrl: row.profileUrl,
     displayName: row.displayName,
     profileImageUrl: row.profileImageUrl,
+    bio: row.bio ?? null,
+    website: row.website ?? null,
     publicEmail: row.publicEmail,
     status: (row.status ?? row.extractionStatus ?? "completed") as SimpleExtractedProfile["status"],
     error: row.error,

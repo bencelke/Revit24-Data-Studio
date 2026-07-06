@@ -5,28 +5,20 @@ import { Button } from "@/components/ui/button";
 
 interface ResultsActionsProps {
   hasResults: boolean;
-  isUploading?: boolean;
   onExportCsv: () => void;
-  onUpload: () => void;
   onClear: () => void;
 }
 
-export function ResultsActions({
-  hasResults,
-  isUploading,
-  onExportCsv,
-  onUpload,
-  onClear,
-}: ResultsActionsProps) {
+export function ResultsActions({ hasResults, onExportCsv, onClear }: ResultsActionsProps) {
   return (
     <div className="flex flex-wrap gap-2">
       <Button variant="secondary" onClick={onExportCsv} disabled={!hasResults}>
         <Download className="mr-2 size-4" />
         Export CSV
       </Button>
-      <Button onClick={onUpload} disabled={!hasResults || isUploading}>
+      <Button disabled title="Upload to Revit24.com — Coming Next Phase">
         <Send className="mr-2 size-4" />
-        {isUploading ? "Uploading..." : "Upload to Revit24"}
+        Upload to Revit24.com — Coming Next Phase
       </Button>
       <Button variant="outline" onClick={onClear} disabled={!hasResults}>
         <Trash2 className="mr-2 size-4" />

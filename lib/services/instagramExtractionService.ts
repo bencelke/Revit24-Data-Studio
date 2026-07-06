@@ -511,3 +511,9 @@ export async function getWorkerLogsForJob(jobId: string, max = 20): Promise<Work
 }
 
 export { getErrorMessage };
+
+export {
+  extractInstagramProfiles,
+  getExtractorPageData,
+  getExtractorSettingsData,
+} from "@/lib/services/instagramPublicExtractorService";

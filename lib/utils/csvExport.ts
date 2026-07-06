@@ -1,4 +1,4 @@
-import type { SimpleExtractedProfile } from "@/lib/types/simpleInstagramImport";
+import type { ExtractedInstagramProfile } from "@/lib/types/instagramExtraction";
 
 function escapeCsvValue(value: string | null | undefined): string {
   const safe = value ?? "";
@@ -8,16 +8,18 @@ function escapeCsvValue(value: string | null | undefined): string {
   return safe;
 }
 
-export function buildSimpleInstagramCsv(rows: SimpleExtractedProfile[]): string {
+export function buildInstagramExtractionCsv(rows: ExtractedInstagramProfile[]): string {
   const header =
-    "username,profileUrl,displayName,profileImageUrl,publicEmail,status,error,extractedAt";
+    "username,profileUrl,profileImageUrl,displayName,bio,website,publicEmail,status,error,extractedAt";
 
   const lines = rows.map((row) =>
     [
       escapeCsvValue(row.username),
       escapeCsvValue(row.profileUrl),
-      escapeCsvValue(row.displayName),
       escapeCsvValue(row.profileImageUrl),
+      escapeCsvValue(row.displayName),
+      escapeCsvValue(row.bio),
+      escapeCsvValue(row.website),
       escapeCsvValue(row.publicEmail),
       escapeCsvValue(row.status),
       escapeCsvValue(row.error),
@@ -26,6 +28,37 @@ export function buildSimpleInstagramCsv(rows: SimpleExtractedProfile[]): string 
   );
 
   return [header, ...lines].join("\n");
+}
+
+/** @deprecated Use buildInstagramExtractionCsv */
+export function buildSimpleInstagramCsv(
+  rows: Array<{
+    username: string;
+    profileUrl: string;
+    profileImageUrl: string | null;
+    displayName: string | null;
+    bio?: string | null;
+    website?: string | null;
+    publicEmail: string | null;
+    status: string;
+    error: string | null;
+    extractedAt: string | null;
+  }>,
+): string {
+  const mapped: ExtractedInstagramProfile[] = rows.map((row, index) => ({
+    id: `legacy_${index}`,
+    username: row.username,
+    profileUrl: row.profileUrl,
+    profileImageUrl: row.profileImageUrl,
+    displayName: row.displayName,
+    bio: row.bio ?? null,
+    website: row.website ?? null,
+    publicEmail: row.publicEmail,
+    status: row.status as ExtractedInstagramProfile["status"],
+    error: row.error,
+    extractedAt: row.extractedAt,
+  }));
+  return buildInstagramExtractionCsv(mapped);
 }
 
 export function downloadCsv(filename: string, csv: string): void {

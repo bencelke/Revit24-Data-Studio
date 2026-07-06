@@ -13,10 +13,10 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import type { SimpleExtractedProfile } from "@/lib/types/simpleInstagramImport";
+import type { ExtractedInstagramProfile } from "@/lib/types/instagramExtraction";
 
 interface InstagramResultsTableProps {
-  rows: SimpleExtractedProfile[];
+  rows: ExtractedInstagramProfile[];
   onRemove: (id: string) => void;
 }
 
@@ -40,7 +40,7 @@ export function InstagramResultsTable({ rows, onRemove }: InstagramResultsTableP
   if (rows.length === 0) {
     return (
       <div className="rounded-lg border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
-        No results yet. Extract profiles from Instagram Import first.
+        No results yet. Extract profiles from Instagram Extractor first.
       </div>
     );
   }
@@ -54,6 +54,7 @@ export function InstagramResultsTable({ rows, onRemove }: InstagramResultsTableP
             <TableHead>Username</TableHead>
             <TableHead>Display Name</TableHead>
             <TableHead>Public Email</TableHead>
+            <TableHead>Website</TableHead>
             <TableHead>Profile URL</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Error</TableHead>
@@ -82,6 +83,7 @@ export function InstagramResultsTable({ rows, onRemove }: InstagramResultsTableP
               <TableCell className="font-medium">@{row.username}</TableCell>
               <TableCell>{row.displayName ?? "—"}</TableCell>
               <TableCell>{row.publicEmail ?? "—"}</TableCell>
+              <TableCell className="max-w-[140px] truncate">{row.website ?? "—"}</TableCell>
               <TableCell className="max-w-[160px] truncate text-muted-foreground">
                 {row.profileUrl}
               </TableCell>

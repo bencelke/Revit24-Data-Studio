@@ -1,21 +1,21 @@
 import type { Metadata } from "next";
 import { AppShell } from "@/components/layout";
-import { SimpleSettingsPanel } from "@/components/settings/SimpleSettingsPanel";
-import { getSimpleSettingsData } from "@/lib/services/simpleInstagramImportService";
+import { ExtractorSettingsPanel } from "@/components/settings/ExtractorSettingsPanel";
+import { getExtractorSettingsData } from "@/lib/services/instagramPublicExtractorService";
 
 export const metadata: Metadata = {
   title: "Settings",
 };
 
 export default async function SettingsPage() {
-  const settings = await getSimpleSettingsData();
+  const settings = await getExtractorSettingsData();
 
   return (
     <AppShell
       title="Settings"
-      description="App configuration and extraction behavior"
+      description="Extractor configuration and behavior"
     >
-      <SimpleSettingsPanel settings={settings} />
+      <ExtractorSettingsPanel settings={settings} />
     </AppShell>
   );
 }

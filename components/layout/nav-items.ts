@@ -8,8 +8,8 @@ import type { NavItem } from "@/lib/types";
 /** Simplified app navigation — only the 3 primary screens. */
 export const mainNavItems: NavItem[] = [
   {
-    title: "Instagram Import",
-    href: "/instagram-import",
+    title: "Instagram Extractor",
+    href: "/instagram-extractor",
     icon: AtSign,
     description: "Paste profiles and extract public metadata",
   },
@@ -17,13 +17,13 @@ export const mainNavItems: NavItem[] = [
     title: "Results",
     href: "/results",
     icon: ClipboardList,
-    description: "Review extracted profiles and upload to Revit24",
+    description: "Review extracted profiles and export CSV",
   },
   {
     title: "Settings",
     href: "/settings",
     icon: Settings,
-    description: "App configuration",
+    description: "Extractor configuration",
   },
 ];
 

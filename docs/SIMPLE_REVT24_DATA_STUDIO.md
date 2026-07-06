@@ -1,6 +1,6 @@
 # Simple Revit24 Data Studio
 
-Revit24 Data Studio is a focused internal tool for pasting Instagram profile links, extracting public metadata, and preparing records for the public Revit24.com app.
+Revit24 Data Studio is a focused internal tool for pasting Instagram profile links and extracting public metadata.
 
 ## Purpose
 
@@ -8,17 +8,17 @@ Three screens only:
 
 | Screen | Route | Purpose |
 |--------|-------|---------|
-| Instagram Import | `/instagram-import` | Paste links, preview, extract |
-| Results | `/results` | Review extractions, export CSV, upload |
-| Settings | `/settings` | Firebase and extraction config |
+| Instagram Extractor | `/instagram-extractor` | Paste links, preview, extract |
+| Results | `/results` | Review extractions, export CSV |
+| Settings | `/settings` | Extractor configuration |
 
-The home route `/` redirects to `/instagram-import`.
+The home route `/` redirects to `/instagram-extractor`.
 
 Legacy routes (dashboard, queue, pipeline, etc.) remain in the codebase but are hidden from the sidebar.
 
 ## Paste links flow
 
-1. Open **Instagram Import**
+1. Open **Instagram Extractor**
 2. Paste one username or profile URL per line
 3. Click **Preview Links** — see total, valid, duplicate, invalid counts
 4. Click **Start Extraction** — profiles are extracted sequentially
@@ -39,72 +39,69 @@ Legacy routes (dashboard, queue, pipeline, etc.) remain in the codebase but are 
 - Empty lines
 - Invalid usernames
 
-Validation uses `lib/validation/instagramProfileInput.ts` (no duplicated logic).
-
 ## Extraction rules
 
-### Collected (public only)
+Only publicly visible data is collected:
 
-- Username / profile URL
-- Profile image URL
-- Display name
-- Public email **only if visible in bio/profile text**
-- Status and extraction timestamp
+| Field | Source |
+|-------|--------|
+| username | Profile handle |
+| profileUrl | Canonical profile URL |
+| profileImageUrl | Public avatar |
+| displayName | Public display name |
+| bio | Public bio text |
+| publicEmail | Only if visible in bio/profile text |
+| website | Only if visible in profile |
+| status | `completed`, `failed`, or `mock` |
+| error | Failure message when applicable |
+| extractedAt | ISO timestamp |
 
-### Never collected
-
-- Hidden emails, private data, DMs
-- Followers/following lists, posts, stories, comments, likes
-- Login-only data
-
-### Modes
-
-| Mode | Condition |
-|------|-----------|
-| Live | `ENABLE_INSTAGRAM_EXTRACTION=true` |
-| Mock | Default — placeholder display name, empty email |
+Not collected: hidden emails, private data, DMs, followers/following lists, posts, stories, comments, likes, or login-only data.
 
 ## CSV export
 
-On the **Results** screen, click **Export CSV**.
-
-Columns:
+From **Results**, click **Export CSV**. Columns:
 
 ```
-username,profileUrl,displayName,profileImageUrl,publicEmail,status,error,extractedAt
+username,profileUrl,profileImageUrl,displayName,bio,website,publicEmail,status,error,extractedAt
 ```
 
-## Firestore upload queue
+## Upload (next phase)
 
-Click **Upload to Revit24** on the Results screen.
+Upload to Revit24.com is not enabled yet. The Results screen shows a disabled placeholder button for the next phase. Architecture is ready for:
 
-Records are saved to `revit24_import_queue`:
+- Mass upload to `revit24_import_queue`
+- User claim system
+- Account verification
 
-| Field | Value |
-|-------|-------|
-| `source` | `"instagram"` |
-| `status` | `"pending_review"` |
-| Profile fields | username, profileUrl, displayName, profileImageUrl, publicEmail |
-| Timestamps | createdAt, updatedAt |
+## Settings
 
-The upload response reports:
+Read-only display of:
 
-- Success count
-- Failed count (failed extractions skipped)
-- Duplicate warning if username already exists in the queue
+- Extractor mode (`live` or `mock`)
+- Mock mode status
+- Extraction enabled flag
+- Delay between profiles
+- Max retries
 
-When Firebase is not configured, mock mode is used and a warning banner is shown. CSV export still works.
+Configure via `.env.local`:
+
+```
+ENABLE_INSTAGRAM_EXTRACTION=true
+INSTAGRAM_EXTRACTION_DELAY_MS=5000
+INSTAGRAM_EXTRACTION_MAX_RETRIES=1
+INSTAGRAM_EXTRACTION_MODE=mock
+```
 
 ## Key files
 
-| Path | Role |
+| Area | Path |
 |------|------|
-| `lib/types/simpleInstagramImport.ts` | Types |
-| `lib/validation/simpleInstagramInput.ts` | Input parsing |
-| `lib/services/simpleInstagramImportService.ts` | Extraction and upload |
-| `lib/repositories/revit24ImportQueueRepository.ts` | Firestore queue |
-| `lib/utils/csvExport.ts` | CSV generation |
-| `lib/utils/simpleImportStorage.ts` | Session storage between Import → Results |
-| `components/instagram-import/` | Import screen |
-| `components/results/` | Results screen |
-| `components/settings/SimpleSettingsPanel.tsx` | Settings screen |
+| Extractor UI | `components/instagram-extractor/` |
+| Results UI | `components/results/` |
+| Settings UI | `components/settings/ExtractorSettingsPanel.tsx` |
+| Types | `lib/types/instagramExtraction.ts` |
+| Validation | `lib/validation/instagramInput.ts` |
+| Service | `lib/services/instagramExtractionService.ts` |
+| CSV | `lib/utils/csvExport.ts` |
+| Session storage | `lib/utils/extractionStorage.ts` |

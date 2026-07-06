@@ -1,43 +1,24 @@
-export const SIMPLE_EXTRACTION_STATUSES = [
-  "pending",
-  "completed",
-  "failed",
-  "mock",
-] as const;
+export {
+  EXTRACTION_STATUSES,
+  type ExtractionStatus,
+  type ExtractorMode,
+  type ParsedInstagramRow,
+  type InstagramParseSummary,
+  type ExtractedInstagramProfile,
+  type ExtractorPageData,
+  type ExtractorSettingsData,
+} from "@/lib/types/instagramExtraction";
 
+// Legacy aliases for upload queue (next phase)
+export const SIMPLE_EXTRACTION_STATUSES = ["pending", "completed", "failed", "mock"] as const;
 export type SimpleExtractionStatus = (typeof SIMPLE_EXTRACTION_STATUSES)[number];
 
 export const REVIT24_IMPORT_QUEUE_STATUSES = ["pending_review"] as const;
-
 export type Revit24ImportQueueStatus = (typeof REVIT24_IMPORT_QUEUE_STATUSES)[number];
 
-export interface SimpleParsedRow {
-  lineNumber: number;
-  originalInput: string;
-  username: string | null;
-  profileUrl: string | null;
-  validationStatus: "valid" | "duplicate" | "invalid";
-  validationError: string | null;
-}
-
-export interface SimpleParseSummary {
-  total: number;
-  valid: number;
-  duplicate: number;
-  invalid: number;
-}
-
-export interface SimpleExtractedProfile {
-  id: string;
-  username: string;
-  profileUrl: string;
-  displayName: string | null;
-  profileImageUrl: string | null;
-  publicEmail: string | null;
-  status: SimpleExtractionStatus;
-  error: string | null;
-  extractedAt: string | null;
-}
+export type SimpleParsedRow = import("@/lib/types/instagramExtraction").ParsedInstagramRow;
+export type SimpleParseSummary = import("@/lib/types/instagramExtraction").InstagramParseSummary;
+export type SimpleExtractedProfile = import("@/lib/types/instagramExtraction").ExtractedInstagramProfile;
 
 export interface Revit24ImportQueueDocument {
   id: string;

@@ -1,6 +1,6 @@
 import type { ProfileExtractionProvider, ProfileExtractionResult } from "@/lib/types/profile-extraction";
 import type { ExtractionRecordDocument } from "@/lib/types/queue";
-import { defaultInstagramProfileExtractor } from "./instagramProfileExtractor";
+import { defaultInstagramPublicProfileProvider } from "./instagramPublicProfileProvider";
 
 export interface InstagramWorkerContext {
   jobId: string;
@@ -11,7 +11,7 @@ export interface InstagramWorkerContext {
 
 export class InstagramProfileWorker {
   constructor(
-    private readonly extractor: ProfileExtractionProvider = defaultInstagramProfileExtractor,
+    private readonly extractor: ProfileExtractionProvider = defaultInstagramPublicProfileProvider,
   ) {}
 
   async processRecord(

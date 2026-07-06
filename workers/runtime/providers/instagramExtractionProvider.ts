@@ -13,6 +13,7 @@ import {
 import { upsertInstagramProfile as persistInstagramProfile } from "@/lib/repositories/instagramProfilesRepository";
 import { isFirestoreAvailable } from "@/lib/repositories/firestore-client";
 import { normalizeInstagramProfile } from "@/lib/services/normalizationPipeline";
+import { logInstagramExtractionPipelineEvent } from "@/lib/services/instagramPipelineLogging";
 import type {
   ExtractionProvider,
   JobExecutionContext,
@@ -30,6 +31,15 @@ function mapErrorToProfileStatus(code: ExtractionErrorCode | undefined): Instagr
       return "private";
     case "PROFILE_NOT_FOUND":
       return "not_found";
+    case "PROFILE_UNAVAILABLE":
+    case "BLOCKED":
+    case "RATE_LIMITED":
+    case "TIMEOUT":
+    case "PARSE_FAILED":
+    case "PARSE_ERROR":
+    case "UNEXPECTED_HTML":
+    case "NETWORK_FAILURE":
+      return "failed";
     default:
       return "failed";
   }
@@ -182,6 +192,13 @@ export class InstagramExtractionProvider implements ExtractionProvider {
           jobId: job.id,
           message: `Processing @${record.username ?? "unknown"}`,
         });
+
+        await logInstagramExtractionPipelineEvent({
+          importJobId: job.importJobId,
+          recordId: record.importRecordId,
+          message: `Extracting @${record.username ?? "unknown"}`,
+          status: "extracting",
+        });
       },
       onRecordComplete: async (record, result) => {
         const timestamp = new Date().toISOString();
@@ -230,6 +247,13 @@ export class InstagramExtractionProvider implements ExtractionProvider {
             event: "Profile Completed",
             jobId: job.id,
             message: `Extracted and normalized @${result.data.username}`,
+          });
+
+          await logInstagramExtractionPipelineEvent({
+            importJobId: job.importJobId,
+            recordId: record.importRecordId,
+            message: `Extracted @${result.data.username} — sent to review`,
+            status: "extracted",
           });
         } else {
           const errorCode = result.error?.code;
@@ -298,6 +322,15 @@ export class InstagramExtractionProvider implements ExtractionProvider {
             jobId: job.id,
             message: result.error?.message ?? "Extraction failed",
           });
+
+          if (!shouldRetry) {
+            await logInstagramExtractionPipelineEvent({
+              importJobId: job.importJobId,
+              recordId: record.importRecordId,
+              message: result.error?.message ?? "Extraction failed",
+              status: "failed",
+            });
+          }
 
           await saveRecordUpdate(record.id, {
             status: "failed",

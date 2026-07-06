@@ -66,6 +66,10 @@ export {
   runInstagramExtractionJob,
 } from "./instagramExtractionService";
 export {
+  getInstagramTestExtractionPageData,
+  runInstagramTestExtraction,
+} from "./instagramTestExtractionService";
+export {
   createInstagramProfileImportJobFromText,
   getDiscoveryPlatformLabel,
   getDiscoveryQueryTypeLabel,

@@ -1,6 +1,11 @@
 import type { ProfileExtractionProvider } from "@/lib/types/profile-extraction";
 import type { ExtractionRecordDocument } from "@/lib/types/queue";
+import { getInstagramExtractionDelayMs } from "@/lib/config/instagramProvider";
 import { InstagramProfileWorker } from "./instagramProfileWorker";
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 export interface WorkerRunnerOptions {
   jobId: string;
@@ -43,6 +48,11 @@ export class InstagramWorkerRunner {
       processed += 1;
       if (result.success) successful += 1;
       else failed += 1;
+
+      const delayMs = getInstagramExtractionDelayMs();
+      if (delayMs > 0) {
+        await sleep(delayMs);
+      }
     }
 
     return { processed, successful, failed };

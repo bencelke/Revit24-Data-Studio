@@ -610,6 +610,22 @@ See [PIPELINE.md](./PIPELINE.md) for full schema, stages, and provider lifecycle
 - `publishQueueService` — enqueue on approval, publish status
 - `pipelineIntegrationService` — hooks into existing import flows
 
+## Phase 15 — Real Instagram Public Metadata Provider
+
+Connects the worker runtime to a real public profile metadata extraction implementation.
+
+### Routes
+
+| Route | Purpose |
+|-------|---------|
+| `/instagram/test` | Internal single-profile extraction test |
+
+See [INSTAGRAM_PROVIDER.md](./INSTAGRAM_PROVIDER.md) for allowed data, rate limits, and configuration.
+
+### Configuration
+
+`ENABLE_INSTAGRAM_EXTRACTION=false` by default. Live extraction must be explicitly enabled.
+
 ## Mock Mode
 
 When Firebase is not configured:

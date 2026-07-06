@@ -28,7 +28,7 @@ import type { ExtractionErrorCode } from "@/lib/types/profile-extraction";
 import type { ExtractionJobDocument, ExtractionRecordDocument } from "@/lib/types/queue";
 import type { CreateWorkerLogInput, WorkerLogDocument } from "@/lib/types/workers";
 import { listWorkerLogs } from "@/lib/services/workerService";
-import { defaultInstagramProfileExtractor } from "@/workers/instagram/instagramProfileExtractor";
+import { defaultInstagramPublicProfileProvider } from "@/workers/instagram/instagramPublicProfileProvider";
 import { defaultInstagramWorkerRunner } from "@/workers/instagram/instagramWorkerRunner";
 import { INSTAGRAM_WORKER_VERSION } from "@/workers/instagram/constants";
 
@@ -193,7 +193,7 @@ export async function extractSingleInstagramProfile(
   } = {},
 ): Promise<InstagramExtractionRunResult> {
   const startedAt = Date.now();
-  const result = await defaultInstagramProfileExtractor.extractProfile({
+  const result = await defaultInstagramPublicProfileProvider.extractProfile({
     profileUrl: input.includes("instagram") ? input : undefined,
     username: input.includes("instagram") ? undefined : input,
   });

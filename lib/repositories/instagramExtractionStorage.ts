@@ -13,6 +13,36 @@ import type {
 
 export const LOCAL_STORAGE_KEY = "revit24_instagram_extractions";
 
+const extractionResultListeners = new Set<() => void>();
+
+function notifyExtractionResultsChanged(): void {
+  for (const listener of extractionResultListeners) {
+    listener();
+  }
+}
+
+export function subscribeToExtractionResults(onStoreChange: () => void): () => void {
+  extractionResultListeners.add(onStoreChange);
+
+  if (typeof window !== "undefined") {
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === LOCAL_STORAGE_KEY || event.key === null) {
+        onStoreChange();
+      }
+    };
+    window.addEventListener("storage", onStorage);
+
+    return () => {
+      extractionResultListeners.delete(onStoreChange);
+      window.removeEventListener("storage", onStorage);
+    };
+  }
+
+  return () => {
+    extractionResultListeners.delete(onStoreChange);
+  };
+}
+
 function sortByExtractedAt(rows: ExtractedInstagramProfile[]): ExtractedInstagramProfile[] {
   return [...rows].sort(
     (a, b) => new Date(b.extractedAt).getTime() - new Date(a.extractedAt).getTime(),
@@ -42,6 +72,7 @@ function writeLocalStorage(rows: ExtractedInstagramProfile[]): void {
   }
 
   window.localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(sortByExtractedAt(rows)));
+  notifyExtractionResultsChanged();
 }
 
 function upsertLocalRecord(record: ExtractedInstagramProfile): { record: ExtractedInstagramProfile; updated: boolean } {
@@ -155,6 +186,7 @@ export async function clearExtractionResults(): Promise<number> {
 
   const count = readLocalStorage().length;
   window.localStorage.removeItem(LOCAL_STORAGE_KEY);
+  notifyExtractionResultsChanged();
   return count;
 }
 

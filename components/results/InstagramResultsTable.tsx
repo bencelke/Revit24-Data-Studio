@@ -28,6 +28,14 @@ async function copyText(value: string) {
   }
 }
 
+/** Deterministic UTC display — identical on server and client. */
+function formatExtractedAt(iso: string): string {
+  const match = iso.match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})/);
+  if (!match) return iso;
+  const [, year, month, day, hour, minute] = match;
+  return `${year}-${month}-${day} ${hour}:${minute} UTC`;
+}
+
 export function InstagramResultsTable({ rows, onRemove }: InstagramResultsTableProps) {
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
@@ -84,7 +92,7 @@ export function InstagramResultsTable({ rows, onRemove }: InstagramResultsTableP
                 {row.error ?? "—"}
               </TableCell>
               <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
-                {new Date(row.extractedAt).toLocaleString()}
+                {formatExtractedAt(row.extractedAt)}
               </TableCell>
               <TableCell>
                 <div className="flex justify-end gap-1">

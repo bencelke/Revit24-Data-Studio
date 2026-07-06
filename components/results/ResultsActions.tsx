@@ -22,11 +22,11 @@ export function ResultsActions({
         <Download className="mr-2 size-4" />
         Export CSV
       </Button>
-      <Button disabled title="Upload to Revit24.com — Coming Next Phase">
+      <Button variant="secondary" disabled={true} title="Upload to Revit24.com — Coming Next Phase">
         <Send className="mr-2 size-4" />
         Upload to Revit24.com — Coming Next Phase
       </Button>
-      <Button variant="outline" onClick={onClear} disabled={!hasResults || isClearing}>
+      <Button variant="outline" onClick={onClear} disabled={!hasResults || Boolean(isClearing)}>
         <Trash2 className="mr-2 size-4" />
         {isClearing ? "Clearing..." : "Clear Results"}
       </Button>

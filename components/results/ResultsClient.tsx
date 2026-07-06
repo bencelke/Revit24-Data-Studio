@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,15 +11,24 @@ import { buildInstagramExtractionCsv, downloadCsv } from "@/lib/utils/csvExport"
 import {
   clearExtractionResults,
   deleteExtractionResult,
-  listExtractionResults,
   listExtractionResultsSync,
+  subscribeToExtractionResults,
   usesLocalStorage,
 } from "@/lib/repositories/instagramExtractionStorage";
 import { MOCK_MODE_WARNING, getErrorMessage } from "@/lib/errors/app-errors";
+import { useIsClientReady } from "@/hooks/useIsClientReady";
 import type { ExtractedInstagramProfile, ExtractorPageData } from "@/lib/types/instagramExtraction";
 
 interface ResultsClientProps extends ExtractorPageData {
   initialResults: ExtractedInstagramProfile[];
+}
+
+function useLocalExtractionResults(): ExtractedInstagramProfile[] {
+  return useSyncExternalStore(
+    subscribeToExtractionResults,
+    listExtractionResultsSync,
+    () => [],
+  );
 }
 
 export function ResultsClient({
@@ -28,19 +37,16 @@ export function ResultsClient({
   extractorMode,
   initialResults,
 }: ResultsClientProps) {
-  const [rows, setRows] = useState<ExtractedInstagramProfile[]>(() =>
-    usesLocalStorage() ? listExtractionResultsSync() : initialResults,
-  );
+  const isClientReady = useIsClientReady();
+  const localRows = useLocalExtractionResults();
+  const [firestoreRows, setFirestoreRows] = useState(initialResults);
+  const rows = usesLocalStorage()
+    ? isClientReady
+      ? localRows
+      : []
+    : firestoreRows;
   const [isClearing, setIsClearing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!usesLocalStorage()) {
-      return;
-    }
-
-    void listExtractionResults().then(setRows);
-  }, []);
 
   function handleExportCsv() {
     if (rows.length === 0) return;
@@ -55,7 +61,6 @@ export function ResultsClient({
     try {
       if (usesLocalStorage()) {
         await clearExtractionResults();
-        setRows([]);
         return;
       }
 
@@ -68,7 +73,7 @@ export function ResultsClient({
         throw new Error(payload.error ?? "Failed to clear results.");
       }
 
-      setRows([]);
+      setFirestoreRows([]);
     } catch (clearError) {
       setError(getErrorMessage(clearError));
     } finally {
@@ -85,7 +90,6 @@ export function ResultsClient({
         if (!deleted) {
           throw new Error("Result not found.");
         }
-        setRows((current) => current.filter((row) => row.id !== id));
         return;
       }
 
@@ -98,7 +102,7 @@ export function ResultsClient({
         throw new Error(payload.error ?? "Failed to delete result.");
       }
 
-      setRows((current) => current.filter((row) => row.id !== id));
+      setFirestoreRows((current) => current.filter((row) => row.id !== id));
     } catch (deleteError) {
       setError(getErrorMessage(deleteError));
     }

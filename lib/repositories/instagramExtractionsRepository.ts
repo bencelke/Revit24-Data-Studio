@@ -5,6 +5,7 @@ import {
   getDocs,
   query,
   setDoc,
+  updateDoc,
   where,
   writeBatch,
   type DocumentData,
@@ -57,6 +58,44 @@ function buildPayload(input: CreateInstagramExtractionInput) {
     createdAt: isoToTimestamp(input.createdAt),
     updatedAt: isoToTimestamp(input.updatedAt),
   };
+}
+
+async function upsertExtractionResultFirestore(
+  input: CreateInstagramExtractionInput,
+): Promise<{ record: InstagramExtractionDocument; updated: boolean }> {
+  const existing = await findByUsernameFirestore(input.username);
+
+  if (existing) {
+    const db = getFirestoreDb();
+    const ref = doc(db, FIRESTORE_COLLECTIONS.instagram_extractions, existing.id);
+    const updatePayload = {
+      source: input.source,
+      username: input.username,
+      profileUrl: input.profileUrl,
+      profileImageUrl: input.profileImageUrl,
+      displayName: input.displayName,
+      bio: input.bio,
+      website: input.website,
+      publicEmail: input.publicEmail,
+      status: input.status,
+      error: input.error,
+      extractedAt: isoToTimestamp(input.extractedAt),
+      updatedAt: isoToTimestamp(input.updatedAt),
+    };
+    await updateDoc(ref, updatePayload);
+    return {
+      record: {
+        ...existing,
+        ...input,
+        id: existing.id,
+        createdAt: existing.createdAt,
+      },
+      updated: true,
+    };
+  }
+
+  const record = await createExtractionResultFirestore(input);
+  return { record, updated: false };
 }
 
 async function createExtractionResultFirestore(
@@ -175,6 +214,15 @@ async function withFirestoreFallback<T>(live: () => Promise<T>, fallback: () => 
   }
 
   return fallback();
+}
+
+export async function upsertExtractionResult(
+  input: CreateInstagramExtractionInput,
+): Promise<{ record: InstagramExtractionDocument; updated: boolean }> {
+  return withFirestoreFallback(
+    () => upsertExtractionResultFirestore(input),
+    () => mockInstagramExtractionsStore.upsert(input),
+  );
 }
 
 export async function createExtractionResult(

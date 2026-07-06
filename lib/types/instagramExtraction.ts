@@ -45,12 +45,20 @@ export type ExtractedInstagramProfile = InstagramExtractionDocument;
 
 export interface InstagramExtractionRunSummary {
   total: number;
-  extracted: number;
-  saved: number;
-  duplicateSkipped: number;
+  succeeded: number;
   failed: number;
-  duplicateUsernames: string[];
+  saved: number;
+  updated: number;
   storageMode: StorageMode;
+}
+
+export interface InstagramExtractionProgress {
+  current: number;
+  total: number;
+  username: string;
+  succeeded: number;
+  failed: number;
+  statusMessage: string;
 }
 
 export interface ExtractorPageData {
@@ -58,6 +66,7 @@ export interface ExtractorPageData {
   storageMode: StorageMode;
   extractorMode: ExtractorMode;
   extractionEnabled: boolean;
+  extractionDelayMs: number;
 }
 
 export interface ExtractorSettingsData {

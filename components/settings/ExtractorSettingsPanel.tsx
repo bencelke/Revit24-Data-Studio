@@ -30,15 +30,14 @@ export function ExtractorSettingsPanel({ settings }: ExtractorSettingsPanelProps
           <CardDescription>Connection and storage mode</CardDescription>
         </CardHeader>
         <CardContent className="space-y-0">
-          <Row label="Firebase status" value={settings.firebaseStatus} />
-          <Row label="Mode" value={settings.mode} />
           <Row
-            label="Extraction enabled"
-            value={settings.extractionEnabled ? "true" : "false"}
+            label="Firebase"
+            value={settings.firebaseConnected ? "Connected" : "Missing"}
           />
+          <Row label="Storage mode" value={settings.storageMode === "live" ? "Live" : "Mock"} />
           <div className="pt-4">
             <Badge variant={settings.storageMode === "live" ? "default" : "outline"}>
-              {settings.storageMode === "live" ? "Live Firestore storage" : "Mock storage"}
+              {settings.storageMode === "live" ? "Live Firestore" : "Mock storage"}
             </Badge>
           </div>
         </CardContent>
@@ -47,28 +46,34 @@ export function ExtractorSettingsPanel({ settings }: ExtractorSettingsPanelProps
       <Card className="border-border bg-card shadow-none">
         <CardHeader>
           <CardTitle className="text-base font-semibold">Extraction</CardTitle>
-          <CardDescription>Public Instagram profile extraction behavior</CardDescription>
+          <CardDescription>Public Instagram profile extractor</CardDescription>
         </CardHeader>
         <CardContent className="space-y-0">
+          <Row
+            label="Live extraction"
+            value={settings.extractionEnabled ? "Enabled" : "Disabled"}
+          />
+          <Row label="Current mode" value={settings.mode} />
           <Row label="Delay between profiles" value={`${settings.extractionDelayMs} ms`} />
           <Row label="Max retries" value={String(settings.extractionMaxRetries)} />
+          <div className="pt-4">
+            <Badge variant={settings.extractionEnabled ? "default" : "outline"}>
+              {settings.extractionEnabled ? "Real extractor" : "Mock extractor"}
+            </Badge>
+          </div>
         </CardContent>
       </Card>
 
       <Card className="border-border bg-card shadow-none lg:col-span-2">
         <CardHeader>
           <CardTitle className="text-base font-semibold">Environment variables</CardTitle>
-          <CardDescription>Set these in .env.local to enable live mode</CardDescription>
+          <CardDescription>Set these in .env.local</CardDescription>
         </CardHeader>
         <CardContent className="font-mono text-xs text-muted-foreground">
-          <p>NEXT_PUBLIC_FIREBASE_API_KEY=</p>
-          <p>NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=</p>
-          <p>NEXT_PUBLIC_FIREBASE_PROJECT_ID=</p>
-          <p>NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=</p>
-          <p>NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=</p>
-          <p>NEXT_PUBLIC_FIREBASE_APP_ID=</p>
-          <p className="mt-3">ENABLE_INSTAGRAM_EXTRACTION=true</p>
+          <p>NEXT_PUBLIC_FIREBASE_*</p>
+          <p className="mt-3">ENABLE_INSTAGRAM_EXTRACTION=false</p>
           <p>INSTAGRAM_EXTRACTION_DELAY_MS=5000</p>
+          <p>INSTAGRAM_EXTRACTION_TIMEOUT_MS=30000</p>
           <p>INSTAGRAM_EXTRACTION_MAX_RETRIES=1</p>
         </CardContent>
       </Card>

@@ -516,6 +516,7 @@ export {
   extractInstagramProfiles,
   runInstagramExtraction,
   runInstagramExtractionFromText,
+  extractAndUpsertSingleProfile,
   listExtractionResults,
   findByUsername,
   deleteExtractionResult,

@@ -1,1 +1,1 @@
-export * from "@/workers/instagram/instagramPublicProfileTypes";
+export * from "@/lib/providers/instagram/instagramPublicProfileTypes";

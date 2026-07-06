@@ -1,28 +1,29 @@
 import {
-  INSTAGRAM_PROVIDER_CONFIG,
+  INSTAGRAM_EXTRACTOR_CONFIG,
   getInstagramExtractionDelayMs,
   isInstagramExtractionEnabled,
   shouldUseInstagramMockExtraction,
-} from "@/lib/config/instagramProvider";
+} from "@/lib/config/instagramExtractor";
 import { isFirebaseConfigured } from "@/lib/firebase/config";
+import { instagramPublicProfileProvider } from "@/lib/providers/instagram";
 import { isFirestoreAvailable } from "@/lib/repositories/firestore-client";
 import {
-  createExtractionResultsBatch,
-  findByUsername,
+  upsertExtractionResult,
   listExtractionResults,
   deleteExtractionResult,
   clearExtractionResults,
+  findByUsername,
 } from "@/lib/repositories/instagramExtractionsRepository";
 import { parseInstagramInput } from "@/lib/validation/instagramInput";
 import type {
   CreateInstagramExtractionInput,
   ExtractedInstagramProfile,
+  ExtractionStatus,
   ExtractorPageData,
   ExtractorSettingsData,
   InstagramExtractionRunSummary,
   StorageMode,
 } from "@/lib/types/instagramExtraction";
-import { defaultInstagramPublicProfileProvider } from "@/workers/instagram/instagramPublicProfileProvider";
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -32,173 +33,113 @@ function getStorageMode(): StorageMode {
   return isFirestoreAvailable() ? "live" : "mock";
 }
 
-function titleCaseUsername(username: string): string {
-  return username
-    .split(/[._-]+/)
-    .filter(Boolean)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ");
+function mapProviderStatus(success: boolean, mock: boolean): ExtractionStatus {
+  if (mock) return "mock";
+  if (success) return "completed";
+  return "failed";
 }
 
-function buildMockProfile(username: string, profileUrl: string): ExtractedInstagramProfile {
+function toCreateInput(params: {
+  username: string;
+  profileUrl: string;
+  profileImageUrl: string | null;
+  displayName: string | null;
+  bio: string | null;
+  website: string | null;
+  publicEmail: string | null;
+  status: ExtractionStatus;
+  error: string | null;
+  extractedAt: string;
+}): CreateInstagramExtractionInput {
   const timestamp = new Date().toISOString();
   return {
-    id: `profile_${username}_${Date.now()}`,
     source: "instagram",
-    username,
-    profileUrl,
-    profileImageUrl: null,
-    displayName: titleCaseUsername(username),
-    bio: `Mock public bio for @${username}`,
-    publicEmail: null,
-    website: null,
-    status: "mock",
-    error: null,
-    extractedAt: timestamp,
+    username: params.username.toLowerCase(),
+    profileUrl: params.profileUrl,
+    profileImageUrl: params.profileImageUrl,
+    displayName: params.displayName,
+    bio: params.bio,
+    website: params.website,
+    publicEmail: params.publicEmail,
+    status: params.status,
+    error: params.error,
+    extractedAt: params.extractedAt,
     createdAt: timestamp,
     updatedAt: timestamp,
   };
 }
 
-function toCreateInput(profile: Omit<ExtractedInstagramProfile, "id">): CreateInstagramExtractionInput {
-  const timestamp = new Date().toISOString();
-  return {
-    source: "instagram",
-    username: profile.username.toLowerCase(),
-    profileUrl: profile.profileUrl,
-    profileImageUrl: profile.profileImageUrl,
-    displayName: profile.displayName,
-    bio: profile.bio,
-    website: profile.website,
-    publicEmail: profile.publicEmail,
-    status: profile.status,
-    error: profile.error,
-    extractedAt: profile.extractedAt,
-    createdAt: profile.createdAt ?? timestamp,
-    updatedAt: profile.updatedAt ?? timestamp,
-  };
-}
-
-async function extractSingleProfile(input: {
+export async function extractAndUpsertSingleProfile(input: {
   username: string;
   profileUrl: string;
-}): Promise<ExtractedInstagramProfile> {
-  const timestamp = new Date().toISOString();
+}): Promise<{ record: ExtractedInstagramProfile; updated: boolean }> {
+  const rawInput = input.profileUrl || input.username;
+  const providerResult = await instagramPublicProfileProvider.extractProfile(rawInput);
+  const extractedAt = providerResult.data?.extractedAt ?? new Date().toISOString();
+  const status = mapProviderStatus(providerResult.success, providerResult.mock);
 
-  if (shouldUseInstagramMockExtraction()) {
-    return buildMockProfile(input.username, input.profileUrl);
+  const createInput = toCreateInput({
+    username: providerResult.data?.username ?? input.username.toLowerCase(),
+    profileUrl: providerResult.data?.profileUrl ?? input.profileUrl,
+    profileImageUrl: providerResult.data?.profileImageUrl ?? null,
+    displayName: providerResult.data?.displayName ?? null,
+    bio: providerResult.data?.bio ?? null,
+    website: providerResult.data?.website ?? null,
+    publicEmail: providerResult.data?.publicEmail ?? null,
+    status,
+    error: providerResult.success ? null : providerResult.error,
+    extractedAt,
+  });
+
+  const existing = await findByUsername(createInput.username);
+  if (existing) {
+    createInput.createdAt = existing.createdAt;
   }
 
-  try {
-    const result = await defaultInstagramPublicProfileProvider.extractProfile({
-      username: input.username,
-      profileUrl: input.profileUrl,
-    });
-
-    if (!result.success || !result.data) {
-      return {
-        id: `profile_${input.username}_${Date.now()}`,
-        source: "instagram",
-        username: input.username.toLowerCase(),
-        profileUrl: input.profileUrl,
-        profileImageUrl: null,
-        displayName: null,
-        bio: null,
-        publicEmail: null,
-        website: null,
-        status: "failed",
-        error: result.error?.message ?? "Extraction failed.",
-        extractedAt: timestamp,
-        createdAt: timestamp,
-        updatedAt: timestamp,
-      };
-    }
-
-    return {
-      id: `profile_${input.username}_${Date.now()}`,
-      source: "instagram",
-      username: result.data.username.toLowerCase(),
-      profileUrl: result.data.profileUrl,
-      profileImageUrl: result.data.profileImageUrl,
-      displayName: result.data.displayName,
-      bio: result.data.bio,
-      publicEmail: result.data.publicEmail,
-      website: result.data.website,
-      status: "completed",
-      error: null,
-      extractedAt: timestamp,
-      createdAt: timestamp,
-      updatedAt: timestamp,
-    };
-  } catch (error) {
-    return {
-      id: `profile_${input.username}_${Date.now()}`,
-      source: "instagram",
-      username: input.username.toLowerCase(),
-      profileUrl: input.profileUrl,
-      profileImageUrl: null,
-      displayName: null,
-      bio: null,
-      publicEmail: null,
-      website: null,
-      status: "failed",
-      error: error instanceof Error ? error.message : "Extraction failed.",
-      extractedAt: timestamp,
-      createdAt: timestamp,
-      updatedAt: timestamp,
-    };
-  }
+  const { record, updated } = await upsertExtractionResult(createInput);
+  return { record, updated };
 }
 
 export async function runInstagramExtraction(
   profiles: { username: string; profileUrl: string }[],
 ): Promise<{ results: ExtractedInstagramProfile[]; summary: InstagramExtractionRunSummary }> {
   const storageMode = getStorageMode();
-  const extracted: ExtractedInstagramProfile[] = [];
-  const toSave: CreateInstagramExtractionInput[] = [];
-  const duplicateUsernames: string[] = [];
-  const knownUsernames = new Set<string>();
-
-  const existing = await listExtractionResults();
-  for (const record of existing) {
-    knownUsernames.add(record.username.toLowerCase());
-  }
-
+  const results: ExtractedInstagramProfile[] = [];
+  let succeeded = 0;
+  let failed = 0;
+  let saved = 0;
+  let updated = 0;
   const delayMs = getInstagramExtractionDelayMs();
 
   for (let index = 0; index < profiles.length; index += 1) {
-    if (index > 0 && !shouldUseInstagramMockExtraction() && delayMs > 0) {
+    if (index > 0 && delayMs > 0) {
       await sleep(delayMs);
     }
 
-    const profile = profiles[index];
-    const result = await extractSingleProfile(profile);
-    extracted.push(result);
+    const { record, updated: wasUpdated } = await extractAndUpsertSingleProfile(profiles[index]);
+    results.push(record);
 
-    const usernameKey = result.username.toLowerCase();
-    if (knownUsernames.has(usernameKey)) {
-      duplicateUsernames.push(result.username);
-      continue;
+    if (record.status === "completed" || record.status === "mock") {
+      succeeded += 1;
+    } else {
+      failed += 1;
     }
 
-    knownUsernames.add(usernameKey);
-    const { id: omittedId, ...rest } = result;
-    void omittedId;
-    toSave.push(toCreateInput(rest));
+    if (wasUpdated) {
+      updated += 1;
+    } else {
+      saved += 1;
+    }
   }
 
-  const saved = await createExtractionResultsBatch(toSave);
-  const failed = extracted.filter((row) => row.status === "failed").length;
-
   return {
-    results: saved,
+    results,
     summary: {
       total: profiles.length,
-      extracted: extracted.length,
-      saved: saved.length,
-      duplicateSkipped: duplicateUsernames.length,
+      succeeded,
       failed,
-      duplicateUsernames,
+      saved,
+      updated,
       storageMode,
     },
   };
@@ -244,20 +185,22 @@ export async function getExtractorPageData(): Promise<ExtractorPageData> {
     storageMode: getStorageMode(),
     extractorMode: shouldUseInstagramMockExtraction() ? "mock" : "live",
     extractionEnabled: isInstagramExtractionEnabled(),
+    extractionDelayMs: INSTAGRAM_EXTRACTOR_CONFIG.delayMs,
   };
 }
 
 export async function getExtractorSettingsData(): Promise<ExtractorSettingsData> {
   const firebaseConnected = isFirebaseConfigured();
   const storageMode = getStorageMode();
+  const extractionLive = isInstagramExtractionEnabled();
 
   return {
     firebaseConnected,
     firebaseStatus: firebaseConnected ? "Connected" : "Not Connected",
     storageMode,
-    mode: storageMode === "live" ? "Live" : "Mock",
-    extractionEnabled: isInstagramExtractionEnabled(),
-    extractionDelayMs: INSTAGRAM_PROVIDER_CONFIG.delayMs,
-    extractionMaxRetries: INSTAGRAM_PROVIDER_CONFIG.maxRetries,
+    mode: extractionLive ? "Live" : "Mock",
+    extractionEnabled: extractionLive,
+    extractionDelayMs: INSTAGRAM_EXTRACTOR_CONFIG.delayMs,
+    extractionMaxRetries: INSTAGRAM_EXTRACTOR_CONFIG.maxRetries,
   };
 }

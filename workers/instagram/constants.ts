@@ -1,6 +1,6 @@
-import { shouldUseInstagramMockExtraction } from "@/lib/config/instagramProvider";
+import { shouldUseInstagramMockExtraction } from "@/lib/config/instagramExtractor";
 
-export const INSTAGRAM_WORKER_VERSION = "0.2.0-public";
+export const INSTAGRAM_WORKER_VERSION = "1.0.0-public";
 export const DEFAULT_FETCH_TIMEOUT_MS = 30_000;
 
 export const INSTAGRAM_PUBLIC_USER_AGENT =
@@ -9,9 +9,9 @@ export const INSTAGRAM_PUBLIC_USER_AGENT =
 export {
   isInstagramExtractionEnabled,
   shouldUseInstagramMockExtraction,
-} from "@/lib/config/instagramProvider";
+} from "@/lib/config/instagramExtractor";
 
-/** @deprecated Use shouldUseInstagramMockExtraction from instagramProvider config */
+/** @deprecated Use shouldUseInstagramMockExtraction from instagramExtractor config */
 export function isInstagramMockExtractionEnabled(): boolean {
   return shouldUseInstagramMockExtraction();
 }

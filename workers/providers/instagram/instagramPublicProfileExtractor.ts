@@ -1,4 +1,4 @@
 export {
-  InstagramPublicProfileExtractor,
-  defaultInstagramPublicProfileExtractor,
-} from "@/workers/instagram/instagramPublicProfileExtractor";
+  InstagramPublicProfileProviderImpl as InstagramPublicProfileExtractor,
+  instagramPublicProfileProvider as defaultInstagramPublicProfileExtractor,
+} from "@/lib/providers/instagram";

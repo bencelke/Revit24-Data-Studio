@@ -1,8 +1,8 @@
 import {
   isInstagramExtractionEnabled,
   shouldUseInstagramMockExtraction,
-  INSTAGRAM_PROVIDER_CONFIG,
-} from "@/lib/config/instagramProvider";
+  INSTAGRAM_EXTRACTOR_CONFIG,
+} from "@/lib/config/instagramExtractor";
 import type { InstagramPublicProfileExtractionResult } from "@/workers/instagram/instagramPublicProfileTypes";
 import { defaultInstagramPublicProfileExtractor } from "@/workers/instagram/instagramPublicProfileExtractor";
 
@@ -25,9 +25,9 @@ export function getInstagramTestExtractionPageData(): InstagramTestExtractionPag
     enabled: isInstagramExtractionEnabled(),
     mockMode: shouldUseInstagramMockExtraction(),
     config: {
-      delayMs: INSTAGRAM_PROVIDER_CONFIG.delayMs,
-      timeoutMs: INSTAGRAM_PROVIDER_CONFIG.timeoutMs,
-      maxRetries: INSTAGRAM_PROVIDER_CONFIG.maxRetries,
+      delayMs: INSTAGRAM_EXTRACTOR_CONFIG.delayMs,
+      timeoutMs: INSTAGRAM_EXTRACTOR_CONFIG.timeoutMs,
+      maxRetries: INSTAGRAM_EXTRACTOR_CONFIG.maxRetries,
     },
   };
 }

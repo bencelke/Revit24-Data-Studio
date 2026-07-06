@@ -1,15 +1,27 @@
 /**
- * Legacy parser — re-exports from instagramPublicProfileParser for backward compatibility.
+ * Legacy parser — adapts lib provider parser for backward compatibility.
  */
-import type { ExtractionError, ProfileMetadata } from "@/lib/types/profile-extraction";
+import type { ExtractionError, ExtractionErrorCode, ProfileMetadata } from "@/lib/types/profile-extraction";
+import type { InstagramExtractorErrorCode } from "@/lib/providers/instagram/instagramPublicProfileTypes";
 import {
   buildMockInstagramPublicProfile,
-  extractPublicEmailFromBio,
-  extractPublicPhoneFromBio,
   parseInstagramPublicProfilePage,
 } from "./instagramPublicProfileParser";
-import { mapPublicProfileErrorToExtractionError } from "./instagramPublicProfileTypes";
-import { INSTAGRAM_WORKER_VERSION } from "./constants";
+import { extractEmailFromText } from "@/lib/utils/instagramMetadata";
+
+const LEGACY_ERROR_MAP: Record<InstagramExtractorErrorCode, ExtractionErrorCode> = {
+  success: "UNKNOWN",
+  invalid_input: "INVALID_INPUT",
+  profile_not_found: "PROFILE_NOT_FOUND",
+  profile_private: "PRIVATE_PROFILE",
+  profile_unavailable: "PROFILE_UNAVAILABLE",
+  parse_failed: "PARSE_FAILED",
+  network_timeout: "TIMEOUT",
+  rate_limited: "RATE_LIMITED",
+  blocked: "BLOCKED",
+  disabled: "UNKNOWN",
+  unknown_error: "UNKNOWN",
+};
 
 export interface InstagramParseInput {
   html: string;
@@ -24,14 +36,22 @@ export interface InstagramParsedProfile {
 }
 
 export function createExtractionError(
-  code: import("@/lib/types/profile-extraction").ExtractionErrorCode,
+  code: ExtractionErrorCode,
   message: string,
   retryable = false,
 ): ExtractionError {
   return { code, message, retryable };
 }
 
-export { extractPublicEmailFromBio, extractPublicPhoneFromBio };
+/** @deprecated Use extractEmailFromText */
+export function extractPublicEmailFromBio(bio: string | null): string | null {
+  return extractEmailFromText(bio);
+}
+
+/** @deprecated Public phone extraction removed */
+export function extractPublicPhoneFromBio(): string | null {
+  return null;
+}
 
 export function parseInstagramPublicProfile(input: {
   html: string;
@@ -41,18 +61,21 @@ export function parseInstagramPublicProfile(input: {
 }): { success: true; profile: InstagramParsedProfile } | { success: false; error: ExtractionError } {
   const parsed = parseInstagramPublicProfilePage({
     ...input,
-    workerVersion: INSTAGRAM_WORKER_VERSION,
     extractedAt: new Date().toISOString(),
   });
 
   if (!parsed.success) {
     return {
       success: false,
-      error: mapPublicProfileErrorToExtractionError(parsed.error),
+      error: {
+        code: LEGACY_ERROR_MAP[parsed.error.code],
+        message: parsed.error.message,
+        retryable: parsed.error.retryable,
+      },
     };
   }
 
-  const { metadata, rawSummary } = parsed.result;
+  const metadata = parsed.data;
 
   return {
     success: true,
@@ -66,14 +89,14 @@ export function parseInstagramPublicProfile(input: {
         profileImageUrl: metadata.profileImageUrl,
         website: metadata.website,
         publicEmail: metadata.publicEmail,
-        publicPhone: metadata.publicPhone,
-        followers: metadata.followers,
-        following: metadata.following,
-        posts: metadata.posts,
-        verified: metadata.verified,
-        businessCategory: metadata.businessCategory,
+        publicPhone: null,
+        followers: null,
+        following: null,
+        posts: null,
+        verified: false,
+        businessCategory: null,
       },
-      rawJson: rawSummary,
+      rawJson: { username: metadata.username },
     },
   };
 }
@@ -82,24 +105,24 @@ export function buildMockInstagramProfile(
   username: string,
   profileUrl: string,
 ): InstagramParsedProfile {
-  const mock = buildMockInstagramPublicProfile(username, profileUrl, INSTAGRAM_WORKER_VERSION);
+  const mock = buildMockInstagramPublicProfile(username, profileUrl);
   return {
     metadata: {
       platform: "instagram",
-      username: mock.metadata.username,
-      displayName: mock.metadata.displayName,
-      bio: mock.metadata.bio,
-      profileUrl: mock.metadata.profileUrl,
-      profileImageUrl: mock.metadata.profileImageUrl,
-      website: mock.metadata.website,
-      publicEmail: mock.metadata.publicEmail,
-      publicPhone: mock.metadata.publicPhone,
-      followers: mock.metadata.followers,
-      following: mock.metadata.following,
-      posts: mock.metadata.posts,
-      verified: mock.metadata.verified,
-      businessCategory: mock.metadata.businessCategory,
+      username: mock.username,
+      displayName: mock.displayName,
+      bio: mock.bio,
+      profileUrl: mock.profileUrl,
+      profileImageUrl: mock.profileImageUrl,
+      website: mock.website,
+      publicEmail: mock.publicEmail,
+      publicPhone: null,
+      followers: null,
+      following: null,
+      posts: null,
+      verified: false,
+      businessCategory: null,
     },
-    rawJson: mock.rawSummary,
+    rawJson: { mock: true, username },
   };
 }

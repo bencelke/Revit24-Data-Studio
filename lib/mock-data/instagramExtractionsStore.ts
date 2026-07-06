@@ -32,6 +32,23 @@ export const mockInstagramExtractionsStore = {
     return [...mockExtractions.values()].find((record) => record.username.toLowerCase() === key) ?? null;
   },
 
+  upsert(input: CreateInstagramExtractionInput): { record: InstagramExtractionDocument; updated: boolean } {
+    const existing = this.findByUsername(input.username);
+    if (existing) {
+      const record: InstagramExtractionDocument = {
+        ...existing,
+        ...input,
+        id: existing.id,
+        createdAt: existing.createdAt,
+        updatedAt: input.updatedAt,
+      };
+      mockExtractions.set(existing.id, record);
+      return { record, updated: true };
+    }
+
+    return { record: this.create(input), updated: false };
+  },
+
   delete(id: string): boolean {
     return mockExtractions.delete(id);
   },

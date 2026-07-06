@@ -1,4 +1,4 @@
 export {
   parseInstagramPublicProfilePage,
   buildMockInstagramPublicProfile,
-} from "@/workers/instagram/instagramPublicProfileParser";
+} from "@/lib/providers/instagram";

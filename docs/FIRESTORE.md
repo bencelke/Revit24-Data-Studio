@@ -26,6 +26,9 @@ Revit24 Data Studio uses Firestore for import job persistence with a repository/
 | `entity_matches`     | Duplicate detection and resolution (Phase 8/12)      |
 | `merge_history`      | Merge resolution audit trail (Phase 12)              |
 | `normalization_logs` | Normalization pipeline audit trail (Phase 8)       |
+| `pipeline_jobs`      | Unified import pipeline jobs (Phase 14)            |
+| `pipeline_events`    | Pipeline stage event audit trail (Phase 14)        |
+| `publish_queue`      | Approved records for public app (Phase 14)         |
 | `logs`             | Application audit logs                               |
 
 ## Planned Collections

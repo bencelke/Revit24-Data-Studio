@@ -195,6 +195,14 @@ export async function createImportJobFromBulkInput(
         details: { jobId: job.id, count: records.length },
       });
 
+      const { startPipelineForImport } = await import("@/lib/services/pipelineIntegrationService");
+      await startPipelineForImport({
+        provider: "instagram",
+        importJobId: job.id,
+        totalRecords: records.length,
+        metadata: { name: job.name },
+      });
+
       return { job, records, dataMode: "firestore" };
     } catch (error) {
       await writeLog({
@@ -204,23 +212,31 @@ export async function createImportJobFromBulkInput(
       });
 
       if (error instanceof FirestoreNotConfiguredError) {
-        return createMockImportJob(jobInput, enriched);
+        return await createMockImportJob(jobInput, enriched);
       }
 
       throw error;
     }
   }
 
-  return createMockImportJob(jobInput, enriched);
+  return await createMockImportJob(jobInput, enriched);
 }
 
-function createMockImportJob(
+async function createMockImportJob(
   jobInput: Omit<ImportJobDocument, "id">,
   parseResult: InstagramProfileBulkParseResult,
-): CreateImportJobResult {
+): Promise<CreateImportJobResult> {
   const job = mockImportJobStore.createImportJob(jobInput);
   const recordInputs = buildRecordInputs(job.id, parseResult);
   const records = mockImportJobStore.createImportRecords(recordInputs);
+
+  const { startPipelineForImport } = await import("@/lib/services/pipelineIntegrationService");
+  await startPipelineForImport({
+    provider: "instagram",
+    importJobId: job.id,
+    totalRecords: records.length,
+    metadata: { name: job.name },
+  });
 
   return {
     job,

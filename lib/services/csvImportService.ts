@@ -440,6 +440,17 @@ export async function createCsvImportJobFromUpload(input: {
     duplicateRows: summary.duplicateRows,
   });
 
+  if (importJobId) {
+    const { startPipelineForImport } = await import("@/lib/services/pipelineIntegrationService");
+    await startPipelineForImport({
+      provider: "csv",
+      importJobId,
+      totalRecords: validRecords.length,
+      skipExtraction: true,
+      metadata: { csvJobId: job.id, fileName: input.fileName },
+    });
+  }
+
   return {
     job: updatedJob ?? job,
     records,

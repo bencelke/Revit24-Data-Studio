@@ -582,6 +582,34 @@ See [CSV_IMPORT.md](./CSV_IMPORT.md) for full schema, validation rules, and life
 
 `csvRowToRaw()` maps CSV rows → `RawExtractedMetadata` with `source: "csv"`. Feeds existing `runNormalizationPipeline()` — same entity model as other sources.
 
+## Phase 14 — Unified Import Pipeline
+
+Connects every import module into one automated end-to-end pipeline. All providers follow the same lifecycle.
+
+### Routes
+
+| Route | Purpose |
+|-------|---------|
+| `/pipeline` | Pipeline dashboard with summary cards and job list |
+| `/pipeline/[jobId]` | Visualizer, timeline, events, progress |
+
+See [PIPELINE.md](./PIPELINE.md) for full schema, stages, and provider lifecycle.
+
+### Collections
+
+| Collection | Purpose |
+|------------|---------|
+| `pipeline_jobs` | Unified pipeline job tracking |
+| `pipeline_events` | Append-only pipeline audit trail |
+| `publish_queue` | Approved records awaiting public app consumption |
+
+### Services
+
+- `pipelineEngine` — provider abstraction and stage orchestration
+- `pipelineService` — job CRUD, dashboard, stage advancement
+- `publishQueueService` — enqueue on approval, publish status
+- `pipelineIntegrationService` — hooks into existing import flows
+
 ## Mock Mode
 
 When Firebase is not configured:

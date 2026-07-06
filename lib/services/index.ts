@@ -197,3 +197,28 @@ export { parseCsvContent, generateCsvTemplate, validateCsvFileSize, validateCsvR
 export { autoDetectFieldMapping, applyFieldMapping, isMappingComplete } from "./csvMappingService";
 export { validateCsvRow, compareCsvRowToRecord } from "./csvValidationService";
 export { csvRowToRaw, normalizeCsvRow, previewNormalizedCsvRow } from "./csvNormalizationService";
+export {
+  getPipelineDashboardData,
+  getPipelineJobDetail,
+  getPipelineListResult,
+  createPipelineJob,
+  advancePipelineStage,
+  formatPipelineProvider,
+  formatPipelineStage,
+  formatPipelineStatus,
+} from "./pipelineService";
+export { logPipelineEvent, getPipelineEventsForJob } from "./pipelineEventService";
+export { getPipelineMetrics } from "./pipelineMetricsService";
+export { startPipelineForImport } from "./pipelineIntegrationService";
+export {
+  enqueueFromApproval,
+  listPublishQueueEntries,
+  markPublishQueueReady,
+  markPublishQueuePublished,
+} from "./publishQueueService";
+export {
+  getImportProvider,
+  runPipelineStage,
+  startPipelineFromProvider,
+  orchestratePipelineThroughReview,
+} from "./pipelineEngine";

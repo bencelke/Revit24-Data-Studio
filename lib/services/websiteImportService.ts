@@ -134,6 +134,15 @@ export async function importSelectedWebsites(
     mockImportJobStore.createImportRecords(recordInputs.map((r) => ({ ...r, jobId: job.id })));
   }
 
+  const { startPipelineForImport } = await import("@/lib/services/pipelineIntegrationService");
+  await startPipelineForImport({
+    provider: "website",
+    importJobId: importJobId!,
+    totalRecords: valid.length,
+    skipExtraction: action !== "queue",
+    metadata: { action },
+  });
+
   for (const site of valid) {
     try {
       await normalizeWebsite(site);

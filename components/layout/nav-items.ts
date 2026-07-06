@@ -8,6 +8,7 @@ import {
   Globe,
   Copy,
   Settings,
+  Workflow,
 } from "lucide-react";
 import type { NavItem } from "@/lib/types";
 
@@ -35,6 +36,12 @@ export const mainNavItems: NavItem[] = [
     href: "/queue",
     icon: ListTodo,
     description: "Background job queue",
+  },
+  {
+    title: "Pipeline",
+    href: "/pipeline",
+    icon: Workflow,
+    description: "Unified import pipeline",
   },
   {
     title: "Entities",

@@ -176,6 +176,15 @@ export async function importSelectedPlaces(
     );
   }
 
+  const { startPipelineForImport } = await import("@/lib/services/pipelineIntegrationService");
+  await startPipelineForImport({
+    provider: "google_places",
+    importJobId: importJobId!,
+    totalRecords: validPlaces.length,
+    skipExtraction: action !== "queue",
+    metadata: { action },
+  });
+
   for (const place of validPlaces) {
     try {
       await normalizeGooglePlace(place);

@@ -157,6 +157,19 @@ export {
 } from "./csvImportRecordsRepository";
 
 export {
+  createPipelineJob,
+  getPipelineJob,
+  listPipelineJobs,
+  updatePipelineJob,
+  createPipelineEvent,
+  listPipelineEventsByJobId,
+  listPipelineEvents,
+  createPublishQueueEntry,
+  listPublishQueue,
+  updatePublishQueueEntry,
+} from "./pipelineRepository";
+
+export {
   getFirestoreDb,
   isFirestoreAvailable,
   isFirebaseConfigured,

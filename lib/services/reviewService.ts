@@ -617,7 +617,7 @@ export async function performReviewAction(
       payload.action === "approve" ||
       payload.action === "approve_anyway"
     ) {
-      await persistApprovedRecordCopy({
+      const approvedRecord = await persistApprovedRecordCopy({
         importRecordId: record.id,
         jobId: record.jobId,
         username: updateData.username ?? record.username,
@@ -633,6 +633,16 @@ export async function performReviewAction(
         approvedBy: reviewer,
         approvedAt: timestamp,
         metadata: { originalInput: record.originalInput },
+      });
+
+      const { enqueueFromApproval } = await import("@/lib/services/publishQueueService");
+      await enqueueFromApproval({
+        importRecordId: record.id,
+        approvedRecordId: approvedRecord.id,
+        pipelineJobId: null,
+        importSource: record.importSource,
+        displayName: approvedRecord.displayName,
+        metadata: { jobId: record.jobId },
       });
     }
 

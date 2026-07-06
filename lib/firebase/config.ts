@@ -26,6 +26,9 @@ export const FIRESTORE_COLLECTIONS = {
   normalized_records: "normalized_records",
   entity_matches: "entity_matches",
   normalization_logs: "normalization_logs",
+  pipeline_jobs: "pipeline_jobs",
+  pipeline_events: "pipeline_events",
+  publish_queue: "publish_queue",
 } as const;
 
 export type FirestoreCollectionName =

@@ -5,26 +5,47 @@ import { Button } from "@/components/ui/button";
 
 interface ResultsActionsProps {
   hasResults: boolean;
+  hasUploadableRecords: boolean;
+  firebaseConnected: boolean;
   isClearing?: boolean;
+  isUploading?: boolean;
   onExportCsv: () => void;
+  onUploadToRevit24: () => void;
   onClear: () => void;
 }
 
 export function ResultsActions({
   hasResults,
+  hasUploadableRecords,
+  firebaseConnected,
   isClearing,
+  isUploading,
   onExportCsv,
+  onUploadToRevit24,
   onClear,
 }: ResultsActionsProps) {
+  const uploadDisabled = !firebaseConnected || !hasUploadableRecords || Boolean(isUploading);
+
   return (
     <div className="flex flex-wrap gap-2">
       <Button variant="secondary" onClick={onExportCsv} disabled={!hasResults}>
         <Download className="mr-2 size-4" />
         Export CSV
       </Button>
-      <Button variant="secondary" disabled={true} title="Upload to Revit24.com — Coming Next Phase">
+      <Button
+        variant="secondary"
+        onClick={onUploadToRevit24}
+        disabled={uploadDisabled}
+        title={
+          !firebaseConnected
+            ? "Configure Firebase in Vercel to upload to Revit24"
+            : !hasUploadableRecords
+              ? "No successful extractions to upload"
+              : "Upload successful extractions to revit24_import_queue"
+        }
+      >
         <Send className="mr-2 size-4" />
-        Upload to Revit24.com — Coming Next Phase
+        {isUploading ? "Uploading..." : "Upload to Revit24"}
       </Button>
       <Button variant="outline" onClick={onClear} disabled={!hasResults || Boolean(isClearing)}>
         <Trash2 className="mr-2 size-4" />

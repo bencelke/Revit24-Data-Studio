@@ -10,4 +10,13 @@ export {
   type FirebaseConfig,
   type FirestoreCollectionName,
 } from "./config";
+export {
+  getFirebaseConnectionStatus,
+  getFirebaseProjectId,
+  formatFirebaseStatusLabel,
+  type FirebaseConnectionStatus,
+} from "./status";
 export { getFirebaseFirestore, getCollectionRef } from "./firestore";
+
+/** Firestore database singleton (null when Firebase is not configured). */
+export { getFirebaseFirestore as db } from "./firestore";

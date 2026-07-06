@@ -4,7 +4,12 @@ import {
   isInstagramExtractionEnabled,
   shouldUseInstagramMockExtraction,
 } from "@/lib/config/instagramExtractor";
-import { isFirebaseConfigured } from "@/lib/firebase/config";
+import { isFirebaseConfigured, FIRESTORE_COLLECTIONS } from "@/lib/firebase/config";
+import {
+  formatFirebaseStatusLabel,
+  getFirebaseConnectionStatus,
+  getFirebaseProjectId,
+} from "@/lib/firebase/status";
 import { instagramPublicProfileProvider } from "@/lib/providers/instagram";
 import { isFirestoreAvailable } from "@/lib/repositories/firestore-client";
 import {
@@ -196,17 +201,21 @@ export async function getExtractorPageData(): Promise<ExtractorPageData> {
 }
 
 export async function getExtractorSettingsData(): Promise<ExtractorSettingsData> {
-  const firebaseConnected = isFirebaseConfigured();
+  const firebaseStatus = getFirebaseConnectionStatus();
+  const firebaseConnected = firebaseStatus === "connected";
   const storageMode = getStorageMode();
   const extractionLive = isInstagramExtractionEnabled();
 
   return {
     firebaseConnected,
-    firebaseStatus: firebaseConnected ? "Connected" : "Not Connected",
+    firebaseStatus: formatFirebaseStatusLabel(firebaseStatus),
+    firebaseProjectId: getFirebaseProjectId(),
     storageMode,
     mode: extractionLive ? "Live" : "Mock",
     extractionEnabled: extractionLive,
     extractionDelayMs: INSTAGRAM_EXTRACTOR_CONFIG.delayMs,
     extractionMaxRetries: INSTAGRAM_EXTRACTOR_CONFIG.maxRetries,
+    importQueueCollection: FIRESTORE_COLLECTIONS.revit24_import_queue,
+    deployment: "Vercel",
   };
 }

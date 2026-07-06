@@ -4,9 +4,11 @@ import type {
 } from "@/lib/types/simpleInstagramImport";
 
 const mockQueue = new Map<string, Revit24ImportQueueDocument>();
+let mockIdCounter = 0;
 
 function generateId(): string {
-  return `r24_queue_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  mockIdCounter += 1;
+  return `r24_queue_mock_${mockIdCounter}`;
 }
 
 export const mockRevit24ImportQueueStore = {
@@ -27,6 +29,20 @@ export const mockRevit24ImportQueueStore = {
 
   listUsernames(): string[] {
     return [...mockQueue.values()].map((record) => record.username.toLowerCase());
+  },
+
+  findByUsername(username: string): Revit24ImportQueueDocument | null {
+    const normalized = username.toLowerCase();
+    for (const record of mockQueue.values()) {
+      if (record.username.toLowerCase() === normalized) {
+        return record;
+      }
+    }
+    return null;
+  },
+
+  deleteRecord(id: string): boolean {
+    return mockQueue.delete(id);
   },
 
   count(): number {

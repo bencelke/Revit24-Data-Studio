@@ -22,22 +22,25 @@ function Row({ label, value }: { label: string; value: string }) {
 }
 
 export function ExtractorSettingsPanel({ settings }: ExtractorSettingsPanelProps) {
+  const storageLabel =
+    settings.storageMode === "live" ? "Firebase Live Mode" : "Local Mock Mode";
+
   return (
     <div className="grid gap-6 lg:grid-cols-2">
       <Card className="border-border bg-card shadow-none">
         <CardHeader>
           <CardTitle className="text-base font-semibold">Firebase</CardTitle>
-          <CardDescription>Connection and storage mode</CardDescription>
+          <CardDescription>Shared Revit24.com project connection</CardDescription>
         </CardHeader>
         <CardContent className="space-y-0">
-          <Row
-            label="Firebase"
-            value={settings.firebaseConnected ? "Connected" : "Missing"}
-          />
-          <Row label="Storage mode" value={settings.storageMode === "live" ? "Live" : "Mock"} />
+          <Row label="Firebase Status" value={settings.firebaseStatus} />
+          <Row label="Project ID" value={settings.firebaseProjectId ?? "Not configured"} />
+          <Row label="Storage Mode" value={storageLabel} />
+          <Row label="Import Queue" value={settings.importQueueCollection} />
+          <Row label="Deployment" value={settings.deployment} />
           <div className="pt-4">
-            <Badge variant={settings.storageMode === "live" ? "default" : "outline"}>
-              {settings.storageMode === "live" ? "Live Firestore" : "Mock storage"}
+            <Badge variant={settings.firebaseConnected ? "default" : "outline"}>
+              {settings.firebaseConnected ? "Connected" : settings.firebaseStatus}
             </Badge>
           </div>
         </CardContent>
@@ -66,11 +69,19 @@ export function ExtractorSettingsPanel({ settings }: ExtractorSettingsPanelProps
 
       <Card className="border-border bg-card shadow-none lg:col-span-2">
         <CardHeader>
-          <CardTitle className="text-base font-semibold">Environment variables</CardTitle>
-          <CardDescription>Set these in .env.local</CardDescription>
+          <CardTitle className="text-base font-semibold">Vercel environment variables</CardTitle>
+          <CardDescription>
+            Add these in the Vercel project settings for revit24-data-studio. Do not commit
+            .env.local.
+          </CardDescription>
         </CardHeader>
         <CardContent className="font-mono text-xs text-muted-foreground">
-          <p>NEXT_PUBLIC_FIREBASE_*</p>
+          <p>NEXT_PUBLIC_FIREBASE_API_KEY</p>
+          <p>NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN</p>
+          <p>NEXT_PUBLIC_FIREBASE_PROJECT_ID</p>
+          <p>NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET</p>
+          <p>NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID</p>
+          <p>NEXT_PUBLIC_FIREBASE_APP_ID</p>
           <p className="mt-3">ENABLE_INSTAGRAM_EXTRACTION=false</p>
           <p>INSTAGRAM_EXTRACTION_DELAY_MS=5000</p>
           <p>INSTAGRAM_EXTRACTION_TIMEOUT_MS=30000</p>

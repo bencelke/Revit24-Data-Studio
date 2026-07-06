@@ -2,6 +2,10 @@ export const EXTRACTION_STATUSES = ["pending", "completed", "failed", "mock"] as
 
 export type ExtractionStatus = (typeof EXTRACTION_STATUSES)[number];
 
+export const UPLOAD_STATUSES = ["not_uploaded", "uploaded", "duplicate", "failed"] as const;
+
+export type UploadStatus = (typeof UPLOAD_STATUSES)[number];
+
 export type ExtractorMode = "live" | "mock";
 export type StorageMode = "live" | "mock";
 
@@ -71,10 +75,13 @@ export interface ExtractorPageData {
 
 export interface ExtractorSettingsData {
   firebaseConnected: boolean;
-  firebaseStatus: "Connected" | "Not Connected";
+  firebaseStatus: "Connected" | "Missing Config" | "Error";
+  firebaseProjectId: string | null;
   storageMode: StorageMode;
   mode: "Live" | "Mock";
   extractionEnabled: boolean;
   extractionDelayMs: number;
   extractionMaxRetries: number;
+  importQueueCollection: string;
+  deployment: string;
 }

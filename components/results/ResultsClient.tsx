@@ -15,10 +15,48 @@ import {
   usesLocalStorage,
 } from "@/lib/repositories/instagramExtractionStorage";
 import { MOCK_MODE_WARNING, getErrorMessage } from "@/lib/errors/app-errors";
-import type { ExtractedInstagramProfile, ExtractorPageData } from "@/lib/types/instagramExtraction";
+import type {
+  ExtractedInstagramProfile,
+  ExtractorPageData,
+  UploadStatus,
+} from "@/lib/types/instagramExtraction";
+import type { UploadToRevit24ImportQueueResult } from "@/lib/types/simpleInstagramImport";
 
 interface ResultsClientProps extends ExtractorPageData {
   initialResults: ExtractedInstagramProfile[];
+}
+
+function isUploadable(row: ExtractedInstagramProfile): boolean {
+  return row.status === "completed" || row.status === "mock";
+}
+
+function buildUploadStatuses(
+  rows: ExtractedInstagramProfile[],
+  result: UploadToRevit24ImportQueueResult,
+  previous: Record<string, UploadStatus>,
+): Record<string, UploadStatus> {
+  const next = { ...previous };
+  const uploaded = new Set(result.uploadedUsernames.map((username) => username.toLowerCase()));
+  const duplicates = new Set(result.duplicateUsernames.map((username) => username.toLowerCase()));
+
+  for (const row of rows) {
+    const key = row.username.toLowerCase();
+    if (row.status === "failed") {
+      next[row.id] = "failed";
+      continue;
+    }
+
+    if (uploaded.has(key)) {
+      next[row.id] = "uploaded";
+      continue;
+    }
+
+    if (duplicates.has(key)) {
+      next[row.id] = "duplicate";
+    }
+  }
+
+  return next;
 }
 
 export function ResultsClient({
@@ -30,7 +68,10 @@ export function ResultsClient({
   const [results, setResults] = useState<ExtractedInstagramProfile[]>(initialResults ?? []);
   const [mounted, setMounted] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [uploadSummary, setUploadSummary] = useState<UploadToRevit24ImportQueueResult | null>(null);
+  const [uploadStatuses, setUploadStatuses] = useState<Record<string, UploadStatus>>({});
 
   useEffect(() => {
     queueMicrotask(() => {
@@ -43,6 +84,7 @@ export function ResultsClient({
 
   const rows = mounted || !usesLocalStorage() ? results : initialResults ?? [];
   const hasResults = rows.length > 0;
+  const hasUploadableRecords = rows.some(isUploadable);
 
   function handleExportCsv() {
     if (!hasResults) return;
@@ -50,14 +92,44 @@ export function ResultsClient({
     downloadCsv(`revit24-instagram-${new Date().toISOString().slice(0, 10)}.csv`, csv);
   }
 
+  async function handleUploadToRevit24() {
+    setIsUploading(true);
+    setError(null);
+    setUploadSummary(null);
+
+    try {
+      const response = await fetch("/api/instagram-import/queue", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ records: rows }),
+      });
+      const payload = (await response.json()) as UploadToRevit24ImportQueueResult & {
+        error?: string;
+      };
+
+      if (!response.ok) {
+        throw new Error(payload.error ?? "Failed to upload to Revit24.");
+      }
+
+      setUploadSummary(payload);
+      setUploadStatuses((current) => buildUploadStatuses(rows, payload, current));
+    } catch (uploadError) {
+      setError(getErrorMessage(uploadError));
+    } finally {
+      setIsUploading(false);
+    }
+  }
+
   async function handleClear() {
     setIsClearing(true);
     setError(null);
+    setUploadSummary(null);
 
     try {
       if (usesLocalStorage()) {
         await clearExtractionResults();
         setResults([]);
+        setUploadStatuses({});
         return;
       }
 
@@ -71,6 +143,7 @@ export function ResultsClient({
       }
 
       setResults([]);
+      setUploadStatuses({});
     } catch (clearError) {
       setError(getErrorMessage(clearError));
     } finally {
@@ -88,6 +161,11 @@ export function ResultsClient({
           throw new Error("Result not found.");
         }
         setResults((current) => current.filter((row) => row.id !== id));
+        setUploadStatuses((current) => {
+          const next = { ...current };
+          delete next[id];
+          return next;
+        });
         return;
       }
 
@@ -101,6 +179,11 @@ export function ResultsClient({
       }
 
       setResults((current) => current.filter((row) => row.id !== id));
+      setUploadStatuses((current) => {
+        const next = { ...current };
+        delete next[id];
+        return next;
+      });
     } catch (deleteError) {
       setError(getErrorMessage(deleteError));
     }
@@ -126,7 +209,7 @@ export function ResultsClient({
         <FirestoreStatusBanner
           variant="warning"
           title="Mock Mode"
-          description={`${MOCK_MODE_WARNING} Results are stored in browser localStorage.`}
+          description={`${MOCK_MODE_WARNING} Results are stored in browser localStorage. Configure Firebase env vars in Vercel to enable Upload to Revit24.`}
         />
       ) : (
         <FirestoreStatusBanner
@@ -134,7 +217,7 @@ export function ResultsClient({
           title="Firebase Connected"
           description={
             firebaseConnected
-              ? "Results are stored in the instagram_extractions Firestore collection."
+              ? "Results are stored in instagram_extractions. Upload sends successful rows to revit24_import_queue for Revit24.com review."
               : undefined
           }
         />
@@ -142,10 +225,27 @@ export function ResultsClient({
 
       <ResultsActions
         hasResults={hasResults}
+        hasUploadableRecords={hasUploadableRecords}
+        firebaseConnected={firebaseConnected}
         isClearing={isClearing}
+        isUploading={isUploading}
         onExportCsv={handleExportCsv}
+        onUploadToRevit24={() => void handleUploadToRevit24()}
         onClear={handleClear}
       />
+
+      {uploadSummary ? (
+        <div className="rounded-lg border border-border bg-muted/30 px-4 py-3 text-sm">
+          <p className="font-medium">Upload summary</p>
+          <p className="mt-1 text-muted-foreground">
+            Uploaded: {uploadSummary.uploadedCount} · Duplicates skipped:{" "}
+            {uploadSummary.skippedDuplicateCount} · Failed extractions skipped: {uploadSummary.failedCount}
+          </p>
+          {uploadSummary.errors.length > 0 ? (
+            <p className="mt-1 text-destructive">{uploadSummary.errors.join(" ")}</p>
+          ) : null}
+        </div>
+      ) : null}
 
       {error ? (
         <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
@@ -153,7 +253,11 @@ export function ResultsClient({
         </div>
       ) : null}
 
-      <InstagramResultsTable rows={rows} onRemove={(id) => void handleRemove(id)} />
+      <InstagramResultsTable
+        rows={rows}
+        uploadStatuses={uploadStatuses}
+        onRemove={(id) => void handleRemove(id)}
+      />
     </div>
   );
 }

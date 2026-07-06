@@ -13,10 +13,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ProfileAvatar } from "./ProfileAvatar";
-import type { ExtractedInstagramProfile } from "@/lib/types/instagramExtraction";
+import type { ExtractedInstagramProfile, UploadStatus } from "@/lib/types/instagramExtraction";
 
 interface InstagramResultsTableProps {
   rows: ExtractedInstagramProfile[];
+  uploadStatuses: Record<string, UploadStatus>;
   onRemove: (id: string) => void;
 }
 
@@ -36,7 +37,38 @@ function formatExtractedAt(iso: string): string {
   return `${year}-${month}-${day} ${hour}:${minute} UTC`;
 }
 
-export function InstagramResultsTable({ rows, onRemove }: InstagramResultsTableProps) {
+function getUploadStatus(row: ExtractedInstagramProfile, uploadStatuses: Record<string, UploadStatus>): UploadStatus {
+  if (uploadStatuses[row.id]) {
+    return uploadStatuses[row.id];
+  }
+  if (row.status === "failed") {
+    return "failed";
+  }
+  return "not_uploaded";
+}
+
+function uploadStatusLabel(status: UploadStatus): string {
+  switch (status) {
+    case "uploaded":
+      return "Uploaded";
+    case "duplicate":
+      return "Duplicate";
+    case "failed":
+      return "Failed";
+    default:
+      return "Not uploaded";
+  }
+}
+
+function UploadStatusBadge({ status }: { status: UploadStatus }) {
+  if (status === "failed") {
+    return <Badge variant="destructive">{uploadStatusLabel(status)}</Badge>;
+  }
+
+  return <Badge variant="outline">{uploadStatusLabel(status)}</Badge>;
+}
+
+export function InstagramResultsTable({ rows, uploadStatuses, onRemove }: InstagramResultsTableProps) {
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   async function handleCopy(id: string, value: string) {
@@ -65,6 +97,7 @@ export function InstagramResultsTable({ rows, onRemove }: InstagramResultsTableP
             <TableHead>Website</TableHead>
             <TableHead>Profile URL</TableHead>
             <TableHead>Status</TableHead>
+            <TableHead>Upload Status</TableHead>
             <TableHead>Error</TableHead>
             <TableHead>Extracted At</TableHead>
             <TableHead className="text-right">Actions</TableHead>
@@ -87,6 +120,9 @@ export function InstagramResultsTable({ rows, onRemove }: InstagramResultsTableP
                 <Badge variant={row.status === "failed" ? "destructive" : "outline"}>
                   {row.status}
                 </Badge>
+              </TableCell>
+              <TableCell>
+                <UploadStatusBadge status={getUploadStatus(row, uploadStatuses)} />
               </TableCell>
               <TableCell className="max-w-[140px] truncate text-muted-foreground">
                 {row.error ?? "—"}

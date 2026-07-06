@@ -1,16 +1,17 @@
-import { mockRevit24ImportQueueStore } from "@/lib/mock-data/revit24ImportQueueStore";
-import { FirestoreNotConfiguredError } from "@/lib/errors/app-errors";
 import { isFirebaseConfigured } from "@/lib/firebase/config";
-import { isFirestoreAvailable } from "@/lib/repositories/firestore-client";
 import {
-  createRevit24ImportQueueRecords,
-  listRevit24ImportQueueUsernames,
-} from "@/lib/repositories/revit24ImportQueueRepository";
+  formatFirebaseStatusLabel,
+  getFirebaseConnectionStatus,
+  getFirebaseProjectId,
+} from "@/lib/firebase/status";
+import { FIRESTORE_COLLECTIONS } from "@/lib/firebase/config";
+import { isFirestoreAvailable } from "@/lib/repositories/firestore-client";
+import { uploadToRevit24ImportQueue as uploadToQueue } from "@/lib/repositories/revit24ImportQueueRepository";
 import type {
-  CreateRevit24ImportQueueInput,
   SimpleExtractedProfile,
   SimpleImportPageData,
   SimpleSettingsData,
+  UploadToRevit24ImportQueueResult,
   UploadToRevit24Result,
 } from "@/lib/types/simpleInstagramImport";
 import {
@@ -48,105 +49,33 @@ export async function getSimpleSettingsData(): Promise<SimpleSettingsData> {
   };
 }
 
-function toQueueInput(row: SimpleExtractedProfile): CreateRevit24ImportQueueInput {
-  const timestamp = new Date().toISOString();
+export async function uploadToRevit24ImportQueue(
+  rows: SimpleExtractedProfile[],
+): Promise<UploadToRevit24ImportQueueResult> {
+  return uploadToQueue(rows);
+}
+
+/** @deprecated Use UploadToRevit24ImportQueueResult */
+export async function uploadToRevit24ImportQueueLegacy(
+  rows: SimpleExtractedProfile[],
+): Promise<UploadToRevit24Result> {
+  const result = await uploadToQueue(rows);
   return {
-    source: "instagram",
-    username: row.username,
-    profileUrl: row.profileUrl,
-    displayName: row.displayName,
-    profileImageUrl: row.profileImageUrl,
-    publicEmail: row.publicEmail,
-    status: "pending_review",
-    createdAt: timestamp,
-    updatedAt: timestamp,
+    successCount: result.uploadedCount,
+    failedCount: result.failedCount,
+    duplicateCount: result.skippedDuplicateCount,
+    duplicateUsernames: result.duplicateUsernames,
+    dataMode: result.dataMode,
   };
 }
 
-async function loadExistingQueueUsernames(): Promise<Set<string>> {
-  if (isFirestoreAvailable()) {
-    try {
-      const usernames = await listRevit24ImportQueueUsernames();
-      return new Set(usernames.map((name) => name.toLowerCase()));
-    } catch (error) {
-      if (error instanceof FirestoreNotConfiguredError) {
-        return new Set(mockRevit24ImportQueueStore.listUsernames());
-      }
-      throw error;
-    }
-  }
-  return new Set(mockRevit24ImportQueueStore.listUsernames());
-}
-
-/** Next-phase upload — kept for API backward compatibility. */
-export async function uploadToRevit24ImportQueue(
-  rows: SimpleExtractedProfile[],
-): Promise<UploadToRevit24Result> {
-  const successful = rows.filter((row) => row.status === "completed" || row.status === "mock");
-
-  if (successful.length === 0) {
-    throw new Error("No successfully extracted profiles to upload.");
-  }
-
-  const existing = await loadExistingQueueUsernames();
-  const duplicateUsernames: string[] = [];
-  const toUpload: SimpleExtractedProfile[] = [];
-
-  for (const row of successful) {
-    const key = row.username.toLowerCase();
-    if (existing.has(key)) {
-      duplicateUsernames.push(row.username);
-    } else {
-      toUpload.push(row);
-      existing.add(key);
-    }
-  }
-
-  const failedCount = rows.filter((row) => row.status === "failed").length;
-
-  if (toUpload.length === 0) {
-    return {
-      successCount: 0,
-      failedCount,
-      duplicateCount: duplicateUsernames.length,
-      duplicateUsernames,
-      dataMode: isFirestoreAvailable() ? "firestore" : "mock",
-    };
-  }
-
-  const inputs = toUpload.map(toQueueInput);
-
-  if (isFirestoreAvailable()) {
-    try {
-      await createRevit24ImportQueueRecords(inputs);
-      return {
-        successCount: inputs.length,
-        failedCount,
-        duplicateCount: duplicateUsernames.length,
-        duplicateUsernames,
-        dataMode: "firestore",
-      };
-    } catch (error) {
-      if (error instanceof FirestoreNotConfiguredError) {
-        mockRevit24ImportQueueStore.createRecords(inputs);
-        return {
-          successCount: inputs.length,
-          failedCount,
-          duplicateCount: duplicateUsernames.length,
-          duplicateUsernames,
-          dataMode: "mock",
-        };
-      }
-      throw error;
-    }
-  }
-
-  mockRevit24ImportQueueStore.createRecords(inputs);
+export function getFirebaseSettingsSnapshot() {
+  const status = getFirebaseConnectionStatus();
   return {
-    successCount: inputs.length,
-    failedCount,
-    duplicateCount: duplicateUsernames.length,
-    duplicateUsernames,
-    dataMode: "mock",
+    firebaseConnected: status === "connected",
+    firebaseStatus: formatFirebaseStatusLabel(status),
+    firebaseProjectId: getFirebaseProjectId(),
+    importQueueCollection: FIRESTORE_COLLECTIONS.revit24_import_queue,
+    deployment: "Vercel",
   };
 }

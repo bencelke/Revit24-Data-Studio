@@ -226,3 +226,34 @@ export {
   startPipelineFromProvider,
   orchestratePipelineThroughReview,
 } from "./pipelineEngine";
+export {
+  getDiscoveryDashboardData,
+  getDiscoveryCampaignDetail,
+  getDiscoveryJobListResult,
+  getDiscoveryResultListResult,
+  listDiscoveryTemplates,
+  runDiscoveryCampaignJob,
+  getDiscoveryHistoryData,
+} from "./discoveryService";
+export {
+  listCampaigns,
+  getCampaignById,
+  createCampaign,
+  updateCampaignStatus,
+  getCampaignListResult,
+} from "./campaignService";
+export {
+  buildKeywordFromParts,
+  buildHashtagsFromInput,
+  generateCampaignKeywords,
+  generateCampaignHashtags,
+  formatEntityType,
+  formatDiscoveryProvider,
+  isProviderActive,
+} from "./keywordGenerationService";
+export {
+  getDiscoveryProviderAdapter,
+  listDiscoveryProviderAdapters,
+  dispatchDiscoveryProvider,
+  mapDiscoveryProviderToPipelineProvider,
+} from "./providerDispatchService";

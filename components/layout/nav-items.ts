@@ -9,6 +9,7 @@ import {
   Copy,
   Settings,
   Workflow,
+  Compass,
 } from "lucide-react";
 import type { NavItem } from "@/lib/types";
 
@@ -24,6 +25,12 @@ export const mainNavItems: NavItem[] = [
     href: "/imports",
     icon: Upload,
     description: "Manage data imports",
+  },
+  {
+    title: "Discovery",
+    href: "/discovery",
+    icon: Compass,
+    description: "Automotive discovery campaigns",
   },
   {
     title: "Review",

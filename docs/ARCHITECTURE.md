@@ -626,6 +626,32 @@ See [INSTAGRAM_PROVIDER.md](./INSTAGRAM_PROVIDER.md) for allowed data, rate limi
 
 `ENABLE_INSTAGRAM_EXTRACTION=false` by default. Live extraction must be explicitly enabled.
 
+## Phase 16 — Discovery Engine
+
+Campaign-based automotive discovery that flows into the import pipeline.
+
+### Routes
+
+| Route | Purpose |
+|-------|---------|
+| `/discovery` | Discovery dashboard |
+| `/discovery/new` | Campaign builder |
+| `/discovery/campaigns` | Campaign list and detail |
+| `/discovery/jobs` | Discovery job execution |
+| `/discovery/history` | Completed jobs and results |
+| `/discovery/templates` | Reusable templates |
+
+See [DISCOVERY_ENGINE.md](./DISCOVERY_ENGINE.md) for campaigns, provider dispatch, and lifecycle.
+
+### Collections
+
+| Collection | Purpose |
+|------------|---------|
+| `discovery_campaigns` | Search campaign definitions |
+| `discovery_jobs` | Campaign execution jobs |
+| `discovery_templates` | Reusable campaign templates |
+| `discovery_results` | Standardized discovery results |
+
 ## Mock Mode
 
 When Firebase is not configured:

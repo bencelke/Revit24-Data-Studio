@@ -29,6 +29,10 @@ export const FIRESTORE_COLLECTIONS = {
   pipeline_jobs: "pipeline_jobs",
   pipeline_events: "pipeline_events",
   publish_queue: "publish_queue",
+  discovery_campaigns: "discovery_campaigns",
+  discovery_jobs: "discovery_jobs",
+  discovery_templates: "discovery_templates",
+  discovery_results: "discovery_results",
 } as const;
 
 export type FirestoreCollectionName =

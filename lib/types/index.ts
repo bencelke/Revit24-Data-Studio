@@ -363,3 +363,39 @@ export type {
   ImportProviderContext,
   ImportProviderResult,
 } from "./import-provider";
+
+export {
+  DISCOVERY_PROVIDERS,
+  ACTIVE_DISCOVERY_PROVIDERS,
+  DISCOVERY_ENTITY_TYPES,
+  DISCOVERY_CAMPAIGN_STATUSES,
+  DISCOVERY_JOB_STATUSES,
+  DISCOVERY_RESULT_STATUSES,
+  DISCOVERY_CONFIDENCE_LEVELS,
+} from "./discovery-engine";
+
+export type {
+  DiscoveryProvider,
+  ActiveDiscoveryProvider,
+  DiscoveryEntityType,
+  DiscoveryCampaignStatus,
+  DiscoveryJobStatus,
+  DiscoveryResultStatus,
+  DiscoveryConfidenceLevel,
+  DiscoveryCampaignDocument,
+  CreateDiscoveryCampaignInput,
+  DiscoveryJobDocument,
+  CreateDiscoveryJobInput,
+  DiscoveryResultDocument,
+  CreateDiscoveryResultInput,
+  DiscoveryTemplateDocument,
+  CreateDiscoveryTemplateInput,
+  DiscoveryDashboardStats,
+  DiscoveryDashboardData,
+  DiscoveryCampaignDetailData,
+  KeywordBuilderInput,
+  DiscoveryCampaignListResult,
+  DiscoveryJobListResult,
+  DiscoveryResultListResult,
+  CreateCampaignPayload,
+} from "./discovery-engine";

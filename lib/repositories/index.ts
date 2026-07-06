@@ -170,6 +170,34 @@ export {
 } from "./pipelineRepository";
 
 export {
+  createDiscoveryCampaign,
+  getDiscoveryCampaign,
+  listDiscoveryCampaigns,
+  updateDiscoveryCampaign,
+} from "./discoveryCampaignRepository";
+
+export {
+  createDiscoveryJob,
+  getDiscoveryJob,
+  listDiscoveryJobs,
+  listDiscoveryJobsByCampaignId,
+  updateDiscoveryJob,
+} from "./discoveryJobRepository";
+
+export {
+  createDiscoveryResults,
+  listDiscoveryResults,
+  listDiscoveryResultsByJobId,
+  listDiscoveryResultsByCampaignId,
+} from "./discoveryResultsRepository";
+
+export {
+  createDiscoveryTemplate,
+  getDiscoveryTemplate,
+  listDiscoveryTemplates,
+} from "./discoveryTemplateRepository";
+
+export {
   getFirestoreDb,
   isFirestoreAvailable,
   isFirebaseConfigured,

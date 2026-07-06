@@ -11,7 +11,7 @@ import { getFirestoreDb } from "@/lib/repositories/firestore-client";
 import type {
   CreateRevit24ImportQueueInput,
   Revit24ImportQueueDocument,
-} from "@/lib/types/instagramSimpleImport";
+} from "@/lib/types/simpleInstagramImport";
 
 function mapQueueDoc(id: string, data: DocumentData): Revit24ImportQueueDocument {
   return {
@@ -21,8 +21,6 @@ function mapQueueDoc(id: string, data: DocumentData): Revit24ImportQueueDocument
     profileUrl: String(data.profileUrl ?? ""),
     displayName: data.displayName != null ? String(data.displayName) : null,
     profileImageUrl: data.profileImageUrl != null ? String(data.profileImageUrl) : null,
-    bio: data.bio != null ? String(data.bio) : null,
-    website: data.website != null ? String(data.website) : null,
     publicEmail: data.publicEmail != null ? String(data.publicEmail) : null,
     status: "pending_review",
     createdAt: timestampToIso(data.createdAt),
@@ -37,8 +35,6 @@ function buildPayload(input: CreateRevit24ImportQueueInput) {
     profileUrl: input.profileUrl,
     displayName: input.displayName,
     profileImageUrl: input.profileImageUrl,
-    bio: input.bio,
-    website: input.website,
     publicEmail: input.publicEmail,
     status: input.status,
     createdAt: isoToTimestamp(input.createdAt),
@@ -69,4 +65,9 @@ export async function listRevit24ImportQueueRecords(): Promise<Revit24ImportQueu
   return snapshot.docs
     .map((queueDoc) => mapQueueDoc(queueDoc.id, queueDoc.data()))
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+}
+
+export async function listRevit24ImportQueueUsernames(): Promise<string[]> {
+  const records = await listRevit24ImportQueueRecords();
+  return records.map((record) => record.username);
 }

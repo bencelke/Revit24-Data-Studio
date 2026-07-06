@@ -1,7 +1,7 @@
 import type {
   CreateRevit24ImportQueueInput,
   Revit24ImportQueueDocument,
-} from "@/lib/types/instagramSimpleImport";
+} from "@/lib/types/simpleInstagramImport";
 
 const mockQueue = new Map<string, Revit24ImportQueueDocument>();
 
@@ -23,6 +23,10 @@ export const mockRevit24ImportQueueStore = {
     return [...mockQueue.values()].sort(
       (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
     );
+  },
+
+  listUsernames(): string[] {
+    return [...mockQueue.values()].map((record) => record.username.toLowerCase());
   },
 
   count(): number {

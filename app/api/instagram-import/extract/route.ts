@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getErrorMessage } from "@/lib/errors/app-errors";
-import { extractInstagramSimpleProfiles } from "@/lib/services/instagramSimpleImportService";
+import { extractSimpleInstagramProfiles } from "@/lib/services/simpleInstagramImportService";
 
 export async function POST(request: Request) {
   try {
@@ -12,7 +12,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "No profiles provided." }, { status: 400 });
     }
 
-    const results = await extractInstagramSimpleProfiles(body.profiles);
+    const results = await extractSimpleInstagramProfiles(body.profiles);
     return NextResponse.json({ results });
   } catch (error) {
     return NextResponse.json(

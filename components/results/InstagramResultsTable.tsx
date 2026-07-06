@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type { SimpleExtractedProfile } from "@/lib/types/simpleInstagramImport";
 
-interface InstagramImportResultsTableProps {
+interface InstagramResultsTableProps {
   rows: SimpleExtractedProfile[];
   onRemove: (id: string) => void;
 }
@@ -28,10 +28,7 @@ async function copyText(value: string) {
   }
 }
 
-export function InstagramImportResultsTable({
-  rows,
-  onRemove,
-}: InstagramImportResultsTableProps) {
+export function InstagramResultsTable({ rows, onRemove }: InstagramResultsTableProps) {
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   async function handleCopy(id: string, value: string) {
@@ -43,7 +40,7 @@ export function InstagramImportResultsTable({
   if (rows.length === 0) {
     return (
       <div className="rounded-lg border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
-        Extraction results will appear here after you start extraction.
+        No results yet. Extract profiles from Instagram Import first.
       </div>
     );
   }
@@ -93,7 +90,7 @@ export function InstagramImportResultsTable({
                   {row.status}
                 </Badge>
               </TableCell>
-              <TableCell className="max-w-[160px] truncate text-muted-foreground">
+              <TableCell className="max-w-[140px] truncate text-muted-foreground">
                 {row.error ?? "—"}
               </TableCell>
               <TableCell>

@@ -5,10 +5,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import type { InstagramSimpleImportSummary } from "@/lib/types/instagramSimpleImport";
+import type { SimpleParseSummary } from "@/lib/types/simpleInstagramImport";
 
 interface InstagramImportSummaryProps {
-  summary: InstagramSimpleImportSummary;
+  summary: SimpleParseSummary;
 }
 
 function SummaryCard({ label, value }: { label: string; value: number }) {
@@ -25,13 +25,11 @@ function SummaryCard({ label, value }: { label: string; value: number }) {
 
 export function InstagramImportSummary({ summary }: InstagramImportSummaryProps) {
   return (
-    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-6">
-      <SummaryCard label="Total Links" value={summary.totalLinks} />
+    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <SummaryCard label="Total" value={summary.total} />
       <SummaryCard label="Valid" value={summary.valid} />
-      <SummaryCard label="Duplicates" value={summary.duplicates} />
+      <SummaryCard label="Duplicate" value={summary.duplicate} />
       <SummaryCard label="Invalid" value={summary.invalid} />
-      <SummaryCard label="Extracted" value={summary.extracted} />
-      <SummaryCard label="Failed" value={summary.failed} />
     </div>
   );
 }

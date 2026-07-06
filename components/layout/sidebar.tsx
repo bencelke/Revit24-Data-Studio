@@ -17,7 +17,7 @@ export function Sidebar({ onNavigate }: SidebarProps) {
     <aside className="flex h-full w-full flex-col border-r border-border bg-sidebar">
       <div className="flex h-14 items-center border-b border-border px-4">
         <Link
-          href="/dashboard"
+          href="/instagram-import"
           className="flex items-center gap-2.5"
           onClick={onNavigate}
         >
@@ -68,9 +68,9 @@ export function Sidebar({ onNavigate }: SidebarProps) {
       </ScrollArea>
 
       <div className="border-t border-border p-4">
-        <p className="text-xs text-muted-foreground">Internal use only</p>
+        <p className="text-xs text-muted-foreground">Instagram import tool</p>
         <p className="mt-1 text-[11px] text-muted-foreground/70">
-          Phase 1 foundation
+          Revit24 Data Studio
         </p>
       </div>
     </aside>

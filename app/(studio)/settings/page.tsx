@@ -1,21 +1,21 @@
 import type { Metadata } from "next";
 import { AppShell } from "@/components/layout";
-import { PlaceholderPage } from "@/components/layout/placeholder-page";
+import { SimpleSettingsPanel } from "@/components/settings/SimpleSettingsPanel";
+import { getSimpleSettingsData } from "@/lib/services/simpleInstagramImportService";
 
 export const metadata: Metadata = {
   title: "Settings",
 };
 
-export default function SettingsPage() {
+export default async function SettingsPage() {
+  const settings = await getSimpleSettingsData();
+
   return (
     <AppShell
       title="Settings"
-      description="Platform configuration, roles, and integrations"
+      description="App configuration and extraction behavior"
     >
-      <PlaceholderPage
-        title="Platform Settings"
-        description="Future home for Firebase configuration, role management, and integration settings."
-      />
+      <SimpleSettingsPanel settings={settings} />
     </AppShell>
   );
 }

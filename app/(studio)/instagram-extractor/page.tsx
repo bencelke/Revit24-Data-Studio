@@ -7,6 +7,8 @@ export const metadata: Metadata = {
   title: "Instagram Extractor",
 };
 
+export const dynamic = "force-dynamic";
+
 export default async function InstagramExtractorPage() {
   const data = await getExtractorPageData();
 

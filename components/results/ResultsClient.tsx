@@ -76,13 +76,26 @@ export function ResultsClient({
   useEffect(() => {
     queueMicrotask(() => {
       setMounted(true);
+
       if (usesLocalStorage()) {
         setResults(listExtractionResultsSync());
+        return;
       }
+
+      void fetch("/api/instagram-extractor/results")
+        .then((response) => response.json())
+        .then((payload: { results?: ExtractedInstagramProfile[] }) => {
+          if (payload.results) {
+            setResults(payload.results);
+          }
+        })
+        .catch(() => {
+          // Results stay empty when the API is unavailable.
+        });
     });
   }, []);
 
-  const rows = mounted || !usesLocalStorage() ? results : initialResults ?? [];
+  const rows = mounted ? results : [];
   const hasResults = rows.length > 0;
   const hasUploadableRecords = rows.some(isUploadable);
 

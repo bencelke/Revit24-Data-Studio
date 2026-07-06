@@ -1,8 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
-import { useIsClientReady } from "@/hooks/useIsClientReady";
 
 interface ProfileAvatarProps {
   username: string;
@@ -10,11 +9,15 @@ interface ProfileAvatarProps {
 }
 
 export function ProfileAvatar({ username, profileImageUrl }: ProfileAvatarProps) {
-  const isClientReady = useIsClientReady();
+  const [mounted, setMounted] = useState(false);
   const [hasError, setHasError] = useState(false);
   const initials = username.slice(0, 2).toUpperCase();
 
-  if (!isClientReady || !profileImageUrl || hasError) {
+  useEffect(() => {
+    queueMicrotask(() => setMounted(true));
+  }, []);
+
+  if (!mounted || !profileImageUrl || hasError) {
     return (
       <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-medium text-muted-foreground">
         {initials}

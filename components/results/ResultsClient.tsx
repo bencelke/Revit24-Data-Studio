@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useSyncExternalStore } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -12,23 +12,13 @@ import {
   clearExtractionResults,
   deleteExtractionResult,
   listExtractionResultsSync,
-  subscribeToExtractionResults,
   usesLocalStorage,
 } from "@/lib/repositories/instagramExtractionStorage";
 import { MOCK_MODE_WARNING, getErrorMessage } from "@/lib/errors/app-errors";
-import { useIsClientReady } from "@/hooks/useIsClientReady";
 import type { ExtractedInstagramProfile, ExtractorPageData } from "@/lib/types/instagramExtraction";
 
 interface ResultsClientProps extends ExtractorPageData {
   initialResults: ExtractedInstagramProfile[];
-}
-
-function useLocalExtractionResults(): ExtractedInstagramProfile[] {
-  return useSyncExternalStore(
-    subscribeToExtractionResults,
-    listExtractionResultsSync,
-    () => [],
-  );
 }
 
 export function ResultsClient({
@@ -37,19 +27,25 @@ export function ResultsClient({
   extractorMode,
   initialResults,
 }: ResultsClientProps) {
-  const isClientReady = useIsClientReady();
-  const localRows = useLocalExtractionResults();
-  const [firestoreRows, setFirestoreRows] = useState(initialResults);
-  const rows = usesLocalStorage()
-    ? isClientReady
-      ? localRows
-      : []
-    : firestoreRows;
+  const [results, setResults] = useState<ExtractedInstagramProfile[]>(initialResults ?? []);
+  const [mounted, setMounted] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    queueMicrotask(() => {
+      setMounted(true);
+      if (usesLocalStorage()) {
+        setResults(listExtractionResultsSync());
+      }
+    });
+  }, []);
+
+  const rows = mounted || !usesLocalStorage() ? results : initialResults ?? [];
+  const hasResults = rows.length > 0;
+
   function handleExportCsv() {
-    if (rows.length === 0) return;
+    if (!hasResults) return;
     const csv = buildInstagramExtractionCsv(rows);
     downloadCsv(`revit24-instagram-${new Date().toISOString().slice(0, 10)}.csv`, csv);
   }
@@ -61,6 +57,7 @@ export function ResultsClient({
     try {
       if (usesLocalStorage()) {
         await clearExtractionResults();
+        setResults([]);
         return;
       }
 
@@ -73,7 +70,7 @@ export function ResultsClient({
         throw new Error(payload.error ?? "Failed to clear results.");
       }
 
-      setFirestoreRows([]);
+      setResults([]);
     } catch (clearError) {
       setError(getErrorMessage(clearError));
     } finally {
@@ -90,6 +87,7 @@ export function ResultsClient({
         if (!deleted) {
           throw new Error("Result not found.");
         }
+        setResults((current) => current.filter((row) => row.id !== id));
         return;
       }
 
@@ -102,7 +100,7 @@ export function ResultsClient({
         throw new Error(payload.error ?? "Failed to delete result.");
       }
 
-      setFirestoreRows((current) => current.filter((row) => row.id !== id));
+      setResults((current) => current.filter((row) => row.id !== id));
     } catch (deleteError) {
       setError(getErrorMessage(deleteError));
     }
@@ -143,7 +141,7 @@ export function ResultsClient({
       )}
 
       <ResultsActions
-        hasResults={rows.length > 0}
+        hasResults={hasResults}
         isClearing={isClearing}
         onExportCsv={handleExportCsv}
         onClear={handleClear}

@@ -4,12 +4,12 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { InstagramExtractorForm } from "./InstagramExtractorForm";
 import { InstagramExtractorSummary } from "./InstagramExtractorSummary";
+import { FirestoreStatusBanner } from "@/components/imports/DataModeBadge";
 import { parseInstagramInput } from "@/lib/validation/instagramInput";
-import { saveExtractionResults } from "@/lib/utils/extractionStorage";
-import { getErrorMessage } from "@/lib/errors/app-errors";
+import { MOCK_MODE_WARNING, getErrorMessage } from "@/lib/errors/app-errors";
 import type {
-  ExtractedInstagramProfile,
   ExtractorPageData,
+  InstagramExtractionRunSummary,
   InstagramParseSummary,
 } from "@/lib/types/instagramExtraction";
 import { Badge } from "@/components/ui/badge";
@@ -24,6 +24,8 @@ const EMPTY_SUMMARY: InstagramParseSummary = {
 type InstagramExtractorClientProps = ExtractorPageData;
 
 export function InstagramExtractorClient({
+  firebaseConnected,
+  storageMode,
   extractorMode,
   extractionEnabled,
 }: InstagramExtractorClientProps) {
@@ -35,6 +37,7 @@ export function InstagramExtractorClient({
   >([]);
   const [isExtracting, setIsExtracting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [runSummary, setRunSummary] = useState<InstagramExtractionRunSummary | null>(null);
 
   function handlePreview() {
     const parsed = parseInstagramInput(input);
@@ -48,6 +51,7 @@ export function InstagramExtractorClient({
         })),
     );
     setError(null);
+    setRunSummary(null);
   }
 
   async function handleExtract() {
@@ -68,6 +72,7 @@ export function InstagramExtractorClient({
 
     setIsExtracting(true);
     setError(null);
+    setRunSummary(null);
 
     try {
       const response = await fetch("/api/instagram-extractor/extract", {
@@ -77,7 +82,7 @@ export function InstagramExtractorClient({
       });
 
       const payload = (await response.json()) as {
-        results?: ExtractedInstagramProfile[];
+        summary?: InstagramExtractionRunSummary;
         error?: string;
       };
 
@@ -85,7 +90,10 @@ export function InstagramExtractorClient({
         throw new Error(payload.error ?? "Extraction failed.");
       }
 
-      saveExtractionResults(payload.results ?? []);
+      if (payload.summary) {
+        setRunSummary(payload.summary);
+      }
+
       router.push("/results");
     } catch (extractError) {
       setError(getErrorMessage(extractError));
@@ -99,11 +107,15 @@ export function InstagramExtractorClient({
     setSummary(EMPTY_SUMMARY);
     setValidProfiles([]);
     setError(null);
+    setRunSummary(null);
   }
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center gap-3">
+        <Badge variant={storageMode === "live" ? "default" : "outline"}>
+          {storageMode === "live" ? "Live Firestore" : "Mock storage"}
+        </Badge>
         <Badge variant={extractorMode === "live" ? "default" : "outline"}>
           {extractorMode === "live" ? "Live extraction" : "Mock extraction"}
         </Badge>
@@ -113,6 +125,24 @@ export function InstagramExtractorClient({
           </span>
         ) : null}
       </div>
+
+      {storageMode === "mock" ? (
+        <FirestoreStatusBanner
+          variant="warning"
+          title="Mock Mode"
+          description={MOCK_MODE_WARNING}
+        />
+      ) : (
+        <FirestoreStatusBanner
+          variant="success"
+          title="Firebase Connected"
+          description={
+            firebaseConnected
+              ? "Extracted profiles will be saved to the instagram_extractions collection."
+              : undefined
+          }
+        />
+      )}
 
       <InstagramExtractorForm
         value={input}
@@ -125,6 +155,16 @@ export function InstagramExtractorClient({
       />
 
       <InstagramExtractorSummary summary={summary} />
+
+      {runSummary ? (
+        <div className="rounded-lg border border-border bg-card px-4 py-3 text-sm text-muted-foreground">
+          Saved {runSummary.saved} of {runSummary.total} profile(s) to {runSummary.storageMode} storage.
+          {runSummary.duplicateSkipped > 0
+            ? ` ${runSummary.duplicateSkipped} duplicate(s) skipped.`
+            : null}
+          {runSummary.failed > 0 ? ` ${runSummary.failed} failed.` : null}
+        </div>
+      ) : null}
 
       {error ? (
         <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">

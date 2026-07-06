@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getErrorMessage } from "@/lib/errors/app-errors";
-import { extractInstagramProfiles } from "@/lib/services/instagramPublicExtractorService";
+import { runInstagramExtraction } from "@/lib/services/instagramPublicExtractorService";
 
 export async function POST(request: Request) {
   try {
@@ -12,8 +12,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "No profiles provided." }, { status: 400 });
     }
 
-    const results = await extractInstagramProfiles(body.profiles);
-    return NextResponse.json({ results });
+    const { results, summary } = await runInstagramExtraction(body.profiles);
+    return NextResponse.json({ results, summary });
   } catch (error) {
     return NextResponse.json(
       { error: getErrorMessage(error, "Instagram extraction failed.") },

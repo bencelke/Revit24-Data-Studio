@@ -26,21 +26,19 @@ export function ExtractorSettingsPanel({ settings }: ExtractorSettingsPanelProps
     <div className="grid gap-6 lg:grid-cols-2">
       <Card className="border-border bg-card shadow-none">
         <CardHeader>
-          <CardTitle className="text-base font-semibold">Extractor</CardTitle>
-          <CardDescription>Public Instagram profile extraction behavior</CardDescription>
+          <CardTitle className="text-base font-semibold">Firebase</CardTitle>
+          <CardDescription>Connection and storage mode</CardDescription>
         </CardHeader>
         <CardContent className="space-y-0">
-          <Row label="Extractor mode" value={settings.extractorMode} />
-          <Row label="Mock mode" value={settings.mockMode ? "Active" : "Inactive"} />
+          <Row label="Firebase status" value={settings.firebaseStatus} />
+          <Row label="Mode" value={settings.mode} />
           <Row
             label="Extraction enabled"
-            value={settings.extractionEnabled ? "Yes" : "No"}
+            value={settings.extractionEnabled ? "true" : "false"}
           />
-          <Row label="Delay between profiles" value={`${settings.extractionDelayMs} ms`} />
-          <Row label="Max retries" value={String(settings.extractionMaxRetries)} />
           <div className="pt-4">
-            <Badge variant={settings.extractorMode === "live" ? "default" : "outline"}>
-              {settings.extractorMode === "live" ? "Live provider" : "Mock provider"}
+            <Badge variant={settings.storageMode === "live" ? "default" : "outline"}>
+              {settings.storageMode === "live" ? "Live Firestore storage" : "Mock storage"}
             </Badge>
           </div>
         </CardContent>
@@ -48,28 +46,30 @@ export function ExtractorSettingsPanel({ settings }: ExtractorSettingsPanelProps
 
       <Card className="border-border bg-card shadow-none">
         <CardHeader>
-          <CardTitle className="text-base font-semibold">Environment variables</CardTitle>
-          <CardDescription>Set these in .env.local to change behavior</CardDescription>
+          <CardTitle className="text-base font-semibold">Extraction</CardTitle>
+          <CardDescription>Public Instagram profile extraction behavior</CardDescription>
         </CardHeader>
-        <CardContent className="font-mono text-xs text-muted-foreground">
-          <p>ENABLE_INSTAGRAM_EXTRACTION=true</p>
-          <p>INSTAGRAM_EXTRACTION_DELAY_MS=5000</p>
-          <p>INSTAGRAM_EXTRACTION_MAX_RETRIES=1</p>
-          <p>INSTAGRAM_EXTRACTION_MODE=mock</p>
+        <CardContent className="space-y-0">
+          <Row label="Delay between profiles" value={`${settings.extractionDelayMs} ms`} />
+          <Row label="Max retries" value={String(settings.extractionMaxRetries)} />
         </CardContent>
       </Card>
 
       <Card className="border-border bg-card shadow-none lg:col-span-2">
         <CardHeader>
-          <CardTitle className="text-base font-semibold">Coming next</CardTitle>
-          <CardDescription>Architecture is ready for future phases</CardDescription>
+          <CardTitle className="text-base font-semibold">Environment variables</CardTitle>
+          <CardDescription>Set these in .env.local to enable live mode</CardDescription>
         </CardHeader>
-        <CardContent className="text-sm text-muted-foreground">
-          <ul className="list-inside list-disc space-y-1">
-            <li>Mass upload to Revit24.com</li>
-            <li>User claim system</li>
-            <li>Account verification</li>
-          </ul>
+        <CardContent className="font-mono text-xs text-muted-foreground">
+          <p>NEXT_PUBLIC_FIREBASE_API_KEY=</p>
+          <p>NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=</p>
+          <p>NEXT_PUBLIC_FIREBASE_PROJECT_ID=</p>
+          <p>NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=</p>
+          <p>NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=</p>
+          <p>NEXT_PUBLIC_FIREBASE_APP_ID=</p>
+          <p className="mt-3">ENABLE_INSTAGRAM_EXTRACTION=true</p>
+          <p>INSTAGRAM_EXTRACTION_DELAY_MS=5000</p>
+          <p>INSTAGRAM_EXTRACTION_MAX_RETRIES=1</p>
         </CardContent>
       </Card>
     </div>

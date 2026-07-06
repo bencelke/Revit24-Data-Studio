@@ -5,11 +5,17 @@ import { Button } from "@/components/ui/button";
 
 interface ResultsActionsProps {
   hasResults: boolean;
+  isClearing?: boolean;
   onExportCsv: () => void;
   onClear: () => void;
 }
 
-export function ResultsActions({ hasResults, onExportCsv, onClear }: ResultsActionsProps) {
+export function ResultsActions({
+  hasResults,
+  isClearing,
+  onExportCsv,
+  onClear,
+}: ResultsActionsProps) {
   return (
     <div className="flex flex-wrap gap-2">
       <Button variant="secondary" onClick={onExportCsv} disabled={!hasResults}>
@@ -20,9 +26,9 @@ export function ResultsActions({ hasResults, onExportCsv, onClear }: ResultsActi
         <Send className="mr-2 size-4" />
         Upload to Revit24.com — Coming Next Phase
       </Button>
-      <Button variant="outline" onClick={onClear} disabled={!hasResults}>
+      <Button variant="outline" onClick={onClear} disabled={!hasResults || isClearing}>
         <Trash2 className="mr-2 size-4" />
-        Clear Results
+        {isClearing ? "Clearing..." : "Clear Results"}
       </Button>
     </div>
   );

@@ -58,6 +58,7 @@ export function InstagramResultsTable({ rows, onRemove }: InstagramResultsTableP
             <TableHead>Profile URL</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Error</TableHead>
+            <TableHead>Extracted At</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -95,6 +96,9 @@ export function InstagramResultsTable({ rows, onRemove }: InstagramResultsTableP
               <TableCell className="max-w-[140px] truncate text-muted-foreground">
                 {row.error ?? "—"}
               </TableCell>
+              <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
+                {new Date(row.extractedAt).toLocaleString()}
+              </TableCell>
               <TableCell>
                 <div className="flex justify-end gap-1">
                   <Button
@@ -127,7 +131,7 @@ export function InstagramResultsTable({ rows, onRemove }: InstagramResultsTableP
                     variant="ghost"
                     size="icon-sm"
                     onClick={() => onRemove(row.id)}
-                    title="Remove row"
+                    title="Delete row"
                   >
                     <Trash2 className="size-4" />
                   </Button>

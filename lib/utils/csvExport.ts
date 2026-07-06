@@ -45,19 +45,25 @@ export function buildSimpleInstagramCsv(
     extractedAt: string | null;
   }>,
 ): string {
-  const mapped: ExtractedInstagramProfile[] = rows.map((row, index) => ({
-    id: `legacy_${index}`,
-    username: row.username,
-    profileUrl: row.profileUrl,
-    profileImageUrl: row.profileImageUrl,
-    displayName: row.displayName,
-    bio: row.bio ?? null,
-    website: row.website ?? null,
-    publicEmail: row.publicEmail,
-    status: row.status as ExtractedInstagramProfile["status"],
-    error: row.error,
-    extractedAt: row.extractedAt,
-  }));
+  const mapped: ExtractedInstagramProfile[] = rows.map((row, index) => {
+    const timestamp = row.extractedAt ?? new Date().toISOString();
+    return {
+      id: `legacy_${index}`,
+      source: "instagram" as const,
+      username: row.username,
+      profileUrl: row.profileUrl,
+      profileImageUrl: row.profileImageUrl,
+      displayName: row.displayName,
+      bio: row.bio ?? null,
+      website: row.website ?? null,
+      publicEmail: row.publicEmail,
+      status: row.status as ExtractedInstagramProfile["status"],
+      error: row.error,
+      extractedAt: timestamp,
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    };
+  });
   return buildInstagramExtractionCsv(mapped);
 }
 

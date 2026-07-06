@@ -34,6 +34,7 @@ export const FIRESTORE_COLLECTIONS = {
   discovery_templates: "discovery_templates",
   discovery_results: "discovery_results",
   revit24_import_queue: "revit24_import_queue",
+  instagram_extractions: "instagram_extractions",
 } as const;
 
 export type FirestoreCollectionName =

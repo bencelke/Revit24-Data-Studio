@@ -514,6 +514,12 @@ export { getErrorMessage };
 
 export {
   extractInstagramProfiles,
+  runInstagramExtraction,
+  runInstagramExtractionFromText,
+  listExtractionResults,
+  findByUsername,
+  deleteExtractionResult,
+  clearExtractionResults,
   getExtractorPageData,
   getExtractorSettingsData,
 } from "@/lib/services/instagramPublicExtractorService";

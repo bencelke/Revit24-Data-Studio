@@ -1,21 +1,27 @@
 import type { Metadata } from "next";
 import { AppShell } from "@/components/layout";
 import { ResultsClient } from "@/components/results/ResultsClient";
-import { getExtractorPageData } from "@/lib/services/instagramPublicExtractorService";
+import {
+  getExtractorPageData,
+  listExtractionResults,
+} from "@/lib/services/instagramPublicExtractorService";
 
 export const metadata: Metadata = {
   title: "Results",
 };
 
 export default async function ResultsPage() {
-  const data = await getExtractorPageData();
+  const [pageData, initialResults] = await Promise.all([
+    getExtractorPageData(),
+    listExtractionResults(),
+  ]);
 
   return (
     <AppShell
       title="Results"
-      description="Review extracted profiles and export CSV"
+      description="Review extracted profiles stored in Firestore and export CSV"
     >
-      <ResultsClient {...data} />
+      <ResultsClient {...pageData} initialResults={initialResults} />
     </AppShell>
   );
 }

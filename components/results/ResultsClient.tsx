@@ -4,25 +4,26 @@ import { useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { FirestoreStatusBanner } from "@/components/imports/DataModeBadge";
 import { InstagramResultsTable } from "./InstagramResultsTable";
 import { ResultsActions } from "./ResultsActions";
 import { buildInstagramExtractionCsv, downloadCsv } from "@/lib/utils/csvExport";
-import {
-  clearExtractionResults,
-  loadExtractionResults,
-  saveExtractionResults,
-} from "@/lib/utils/extractionStorage";
+import { MOCK_MODE_WARNING, getErrorMessage } from "@/lib/errors/app-errors";
 import type { ExtractedInstagramProfile, ExtractorPageData } from "@/lib/types/instagramExtraction";
 
-type ResultsClientProps = ExtractorPageData;
+interface ResultsClientProps extends ExtractorPageData {
+  initialResults: ExtractedInstagramProfile[];
+}
 
-export function ResultsClient({ extractorMode }: ResultsClientProps) {
-  const [rows, setRows] = useState<ExtractedInstagramProfile[]>(() => loadExtractionResults());
-
-  function persist(next: ExtractedInstagramProfile[]) {
-    setRows(next);
-    saveExtractionResults(next);
-  }
+export function ResultsClient({
+  firebaseConnected,
+  storageMode,
+  extractorMode,
+  initialResults,
+}: ResultsClientProps) {
+  const [rows, setRows] = useState<ExtractedInstagramProfile[]>(initialResults);
+  const [isClearing, setIsClearing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   function handleExportCsv() {
     if (rows.length === 0) return;
@@ -30,32 +31,95 @@ export function ResultsClient({ extractorMode }: ResultsClientProps) {
     downloadCsv(`revit24-instagram-${new Date().toISOString().slice(0, 10)}.csv`, csv);
   }
 
-  function handleClear() {
-    clearExtractionResults();
-    setRows([]);
+  async function handleClear() {
+    setIsClearing(true);
+    setError(null);
+
+    try {
+      const response = await fetch("/api/instagram-extractor/results/clear", {
+        method: "DELETE",
+      });
+      const payload = (await response.json()) as { error?: string };
+
+      if (!response.ok) {
+        throw new Error(payload.error ?? "Failed to clear results.");
+      }
+
+      setRows([]);
+    } catch (clearError) {
+      setError(getErrorMessage(clearError));
+    } finally {
+      setIsClearing(false);
+    }
+  }
+
+  async function handleRemove(id: string) {
+    setError(null);
+
+    try {
+      const response = await fetch(`/api/instagram-extractor/results/${id}`, {
+        method: "DELETE",
+      });
+      const payload = (await response.json()) as { error?: string };
+
+      if (!response.ok) {
+        throw new Error(payload.error ?? "Failed to delete result.");
+      }
+
+      setRows((current) => current.filter((row) => row.id !== id));
+    } catch (deleteError) {
+      setError(getErrorMessage(deleteError));
+    }
   }
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <Badge variant={extractorMode === "live" ? "default" : "outline"}>
-          {extractorMode === "live" ? "Live extraction" : "Mock extraction"}
-        </Badge>
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge variant={storageMode === "live" ? "default" : "outline"}>
+            {storageMode === "live" ? "Live Firestore" : "Mock storage"}
+          </Badge>
+          <Badge variant={extractorMode === "live" ? "default" : "outline"}>
+            {extractorMode === "live" ? "Live extraction" : "Mock extraction"}
+          </Badge>
+        </div>
         <Button variant="ghost" size="sm" nativeButton={false} render={<Link href="/instagram-extractor" />}>
           Back to Extractor
         </Button>
       </div>
 
+      {storageMode === "mock" ? (
+        <FirestoreStatusBanner
+          variant="warning"
+          title="Mock Mode"
+          description={MOCK_MODE_WARNING}
+        />
+      ) : (
+        <FirestoreStatusBanner
+          variant="success"
+          title="Firebase Connected"
+          description={
+            firebaseConnected
+              ? "Results are stored in the instagram_extractions Firestore collection."
+              : undefined
+          }
+        />
+      )}
+
       <ResultsActions
         hasResults={rows.length > 0}
+        isClearing={isClearing}
         onExportCsv={handleExportCsv}
         onClear={handleClear}
       />
 
-      <InstagramResultsTable
-        rows={rows}
-        onRemove={(id) => persist(rows.filter((row) => row.id !== id))}
-      />
+      {error ? (
+        <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          {error}
+        </div>
+      ) : null}
+
+      <InstagramResultsTable rows={rows} onRemove={(id) => void handleRemove(id)} />
     </div>
   );
 }

@@ -4,7 +4,8 @@ import type {
   BusinessDiscoverySearchResult,
 } from "@/lib/types/business-discovery";
 import type { CreateGooglePlaceRawInput, PlacesSearchQuery } from "@/lib/types/google-places";
-import { isGooglePlacesApiConfigured } from "@/lib/config/google-places";
+import { isGooglePlacesApiConfigured, isGooglePlacesEnabled } from "@/lib/config/google-places";
+import { defaultGooglePlacesProductionProvider } from "@/lib/services/googlePlacesProvider";
 
 const MOCK_BUSINESSES = [
   { name: "Precision Performance Tuning", category: "Performance Shop", keyword: "tuning" },
@@ -54,6 +55,7 @@ function buildMockPlace(
     googleMapsUrl: `https://maps.google.com/?cid=${placeId}`,
     openingHours: ["Mon-Fri 9:00-18:00", "Sat 10:00-14:00"],
     photos: [],
+    businessStatus: "OPERATIONAL",
     status: "discovered",
     source: "google_places",
     searchJobId: jobId,
@@ -85,10 +87,30 @@ export class GooglePlacesDiscoveryProvider implements BusinessDiscoveryProvider 
   }
 
   async search(input: BusinessDiscoverySearchInput): Promise<BusinessDiscoverySearchResult> {
+    if (isGooglePlacesEnabled()) {
+      return this.searchProduction(input);
+    }
     if (this.isConfigured()) {
       return this.searchLive(input);
     }
     return this.searchMock(input);
+  }
+
+  private async searchProduction(
+    input: BusinessDiscoverySearchInput,
+  ): Promise<BusinessDiscoverySearchResult> {
+    const result = await defaultGooglePlacesProductionProvider.executeSearch(input);
+
+    if (result.error && result.places.length === 0 && result.error.code !== "NO_RESULTS") {
+      return this.searchMock(input);
+    }
+
+    return {
+      places: result.places.map((place) => ({ ...place, id: `live_${place.placeId}` })),
+      totalResults: result.totalResults,
+      provider: this.name,
+      mockMode: false,
+    };
   }
 
   private async searchMock(input: BusinessDiscoverySearchInput): Promise<BusinessDiscoverySearchResult> {
@@ -164,6 +186,7 @@ export class GooglePlacesDiscoveryProvider implements BusinessDiscoveryProvider 
         googleMapsUrl: `https://maps.google.com/?q=place_id:${result.place_id}`,
         openingHours: [],
         photos: [],
+        businessStatus: "OPERATIONAL",
         status: "discovered" as const,
         source: "google_places" as const,
         searchJobId: null,

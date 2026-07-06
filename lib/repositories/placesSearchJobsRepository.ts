@@ -36,6 +36,10 @@ function mapJobDoc(id: string, data: DocumentData): PlacesSearchJobDocument {
     totalResults: Number(data.totalResults ?? 0),
     importedResults: Number(data.importedResults ?? 0),
     failedResults: Number(data.failedResults ?? 0),
+    scheduledAt: data.scheduledAt != null ? timestampToIso(data.scheduledAt) : null,
+    clonedFromJobId: data.clonedFromJobId != null ? String(data.clonedFromJobId) : null,
+    searchType: data.searchType != null ? (data.searchType as PlacesSearchJobDocument["searchType"]) : null,
+    errorMessage: data.errorMessage != null ? String(data.errorMessage) : null,
   };
 }
 
@@ -53,6 +57,10 @@ export async function createPlacesSearchJob(
     totalResults: input.totalResults ?? 0,
     importedResults: input.importedResults ?? 0,
     failedResults: input.failedResults ?? 0,
+    scheduledAt: input.scheduledAt ? isoToTimestamp(input.scheduledAt) : null,
+    clonedFromJobId: input.clonedFromJobId ?? null,
+    searchType: input.searchType ?? null,
+    errorMessage: input.errorMessage ?? null,
   };
   await setDoc(ref, payload);
   return mapJobDoc(ref.id, payload);

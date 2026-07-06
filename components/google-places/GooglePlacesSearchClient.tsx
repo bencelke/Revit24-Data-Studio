@@ -3,9 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { DataModeBadge, FirestoreStatusBanner } from "@/components/imports/DataModeBadge";
-import { SearchFilters, getDefaultPlacesSearchQuery } from "./SearchFilters";
+import { GoogleSearchForm, GoogleSummaryCards, getDefaultPlacesSearchQuery } from "@/components/google";
 import { SavedSearchCard } from "./SavedSearchCard";
-import { PlacesSummaryCards } from "./PlacesSummaryCards";
 import type { PlacesSearchPageData, PlacesSearchQuery, SavedSearchDocument } from "@/lib/types/google-places";
 import type { ImportDataMode } from "@/lib/types/import-jobs";
 import { MOCK_MODE_WARNING } from "@/lib/errors/app-errors";
@@ -40,6 +39,20 @@ export function GooglePlacesSearchClient({
         const data = (await response.json()) as { jobId: string };
         router.push(`/google-places/results?jobId=${data.jobId}`);
       }
+    } finally {
+      setIsSearching(false);
+    }
+  }
+
+  async function handleSchedule(scheduledAt: string) {
+    setIsSearching(true);
+    try {
+      await fetch("/api/google-places/search/schedule", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query, scheduledAt }),
+      });
+      router.refresh();
     } finally {
       setIsSearching(false);
     }
@@ -86,18 +99,19 @@ export function GooglePlacesSearchClient({
         <FirestoreStatusBanner variant="warning" title="Mock Data" description={warning} />
       ) : null}
 
-      <PlacesSummaryCards
+      <GoogleSummaryCards
         totalJobs={recentJobs.length}
         completedJobs={recentJobs.filter((job) => job.status === "completed").length}
         totalPlaces={recentJobs.reduce((sum, job) => sum + job.totalResults, 0)}
         importedPlaces={recentJobs.reduce((sum, job) => sum + job.importedResults, 0)}
       />
 
-      <SearchFilters
+      <GoogleSearchForm
         query={query}
         onChange={setQuery}
         onSearch={handleSearch}
         onSave={handleSave}
+        onSchedule={handleSchedule}
         onClear={() => setQuery(getDefaultPlacesSearchQuery())}
         isSearching={isSearching}
       />

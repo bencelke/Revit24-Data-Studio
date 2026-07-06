@@ -1,19 +1,16 @@
 import { mockGooglePlacesStore, mockPlacesSearchJobsStore, mockSavedSearchStore } from "@/lib/mock-data/googlePlacesStore";
 import { FirestoreNotConfiguredError, MOCK_MODE_WARNING } from "@/lib/errors/app-errors";
 import { isFirebaseConfigured } from "@/lib/firebase/config";
-import { isGooglePlacesApiConfigured } from "@/lib/config/google-places";
+import { isGooglePlacesApiConfigured, isGooglePlacesEnabled } from "@/lib/config/google-places";
 import {
-  createGooglePlaces as persistGooglePlaces,
   listGooglePlaces as fetchGooglePlaces,
   listGooglePlacesByJobId as fetchGooglePlacesByJobId,
   getGooglePlace as fetchGooglePlace,
   getGooglePlaceByPlaceId as fetchGooglePlaceByPlaceId,
 } from "@/lib/repositories/googlePlacesRepository";
 import {
-  createPlacesSearchJob as persistSearchJob,
   getPlacesSearchJob as fetchSearchJob,
   listPlacesSearchJobs as fetchSearchJobs,
-  updatePlacesSearchJob as persistUpdateSearchJob,
 } from "@/lib/repositories/placesSearchJobsRepository";
 import {
   createSavedSearch as persistSavedSearch,
@@ -21,7 +18,7 @@ import {
   deleteSavedSearch as persistDeleteSavedSearch,
 } from "@/lib/repositories/savedSearchRepository";
 import { isFirestoreAvailable } from "@/lib/repositories/firestore-client";
-import { getBusinessDiscoveryProvider } from "@/lib/services/googlePlacesService";
+import { executeGooglePlacesSearch, rerunGooglePlacesSearch, cloneGooglePlacesSearch } from "@/lib/services/googlePlacesSearchService";
 import type {
   CreateSavedSearchInput,
   GooglePlaceRawDocument,
@@ -64,105 +61,20 @@ async function loadSearchJobs(): Promise<PlacesSearchJobDocument[]> {
   return mockPlacesSearchJobsStore.listJobs();
 }
 
-async function saveSearchJob(
-  input: Omit<PlacesSearchJobDocument, "id">,
-): Promise<PlacesSearchJobDocument> {
-  if (isFirestoreAvailable()) {
-    try {
-      return await persistSearchJob(input);
-    } catch (error) {
-      if (error instanceof FirestoreNotConfiguredError) {
-        return mockPlacesSearchJobsStore.createJob(input);
-      }
-      throw error;
-    }
-  }
-  return mockPlacesSearchJobsStore.createJob(input);
-}
-
-async function savePlaces(
-  places: Omit<GooglePlaceRawDocument, "id">[],
-  jobId: string,
-): Promise<GooglePlaceRawDocument[]> {
-  const inputs = places.map((place) => ({ ...place, searchJobId: jobId }));
-  if (isFirestoreAvailable()) {
-    try {
-      return await persistGooglePlaces(inputs);
-    } catch (error) {
-      if (error instanceof FirestoreNotConfiguredError) {
-        return mockGooglePlacesStore.createPlaces(inputs);
-      }
-      throw error;
-    }
-  }
-  return mockGooglePlacesStore.createPlaces(inputs);
-}
-
 export async function runPlacesSearch(
   query: PlacesSearchQuery,
 ): Promise<{ job: PlacesSearchJobDocument; places: GooglePlaceRawDocument[] }> {
-  const timestamp = new Date().toISOString();
-  const provider = getBusinessDiscoveryProvider("google_places");
+  return executeGooglePlacesSearch(query);
+}
 
-  const job = await saveSearchJob({
-    status: "running",
-    query,
-    createdBy: CREATED_BY,
-    createdAt: timestamp,
-    completedAt: null,
-    totalResults: 0,
-    importedResults: 0,
-    failedResults: 0,
-  });
+export async function rerunPlacesSearch(
+  jobId: string,
+): Promise<{ job: PlacesSearchJobDocument; places: GooglePlaceRawDocument[] }> {
+  return rerunGooglePlacesSearch(jobId);
+}
 
-  try {
-    const result = await provider.search({
-      ...query,
-      resultLimit: query.resultLimit ?? 20,
-      language: query.language ?? "en",
-    });
-
-    const places = await savePlaces(result.places, job.id);
-    const completedAt = new Date().toISOString();
-
-    const update = {
-      status: "completed" as const,
-      completedAt,
-      totalResults: places.length,
-    };
-
-    if (isFirestoreAvailable()) {
-      try {
-        await persistUpdateSearchJob(job.id, update);
-      } catch (error) {
-        if (error instanceof FirestoreNotConfiguredError) {
-          mockPlacesSearchJobsStore.updateJob(job.id, update);
-        } else {
-          throw error;
-        }
-      }
-    } else {
-      mockPlacesSearchJobsStore.updateJob(job.id, update);
-    }
-
-    return {
-      job: { ...job, ...update },
-      places,
-    };
-  } catch (error) {
-    const failedAt = new Date().toISOString();
-    const failUpdate = { status: "failed" as const, completedAt: failedAt, failedResults: 1 };
-    if (isFirestoreAvailable()) {
-      try {
-        await persistUpdateSearchJob(job.id, failUpdate);
-      } catch {
-        mockPlacesSearchJobsStore.updateJob(job.id, failUpdate);
-      }
-    } else {
-      mockPlacesSearchJobsStore.updateJob(job.id, failUpdate);
-    }
-    throw error;
-  }
+export async function clonePlacesSearch(jobId: string): Promise<PlacesSearchJobDocument> {
+  return cloneGooglePlacesSearch(jobId);
 }
 
 export async function savePlacesSearch(input: {
@@ -214,7 +126,7 @@ export async function deletePlacesSavedSearch(id: string): Promise<void> {
 export async function getPlacesSearchPageData(): Promise<PlacesSearchPageData> {
   const firebaseConfigured = isFirebaseConfigured();
   const useFirestore = isFirestoreAvailable();
-  const googlePlacesConfigured = isGooglePlacesApiConfigured();
+  const googlePlacesConfigured = isGooglePlacesEnabled() || isGooglePlacesApiConfigured();
 
   return {
     savedSearches: await loadSavedSearches(),
@@ -235,7 +147,7 @@ export async function getPlacesResultsPageData(
 ): Promise<PlacesResultsPageData | null> {
   const firebaseConfigured = isFirebaseConfigured();
   const useFirestore = isFirestoreAvailable();
-  const googlePlacesConfigured = isGooglePlacesApiConfigured();
+  const googlePlacesConfigured = isGooglePlacesEnabled() || isGooglePlacesApiConfigured();
 
   let job: PlacesSearchJobDocument | null;
   let places: GooglePlaceRawDocument[];
@@ -273,7 +185,7 @@ export async function getPlaceDetailPageData(
 ): Promise<PlaceDetailPageData | null> {
   const firebaseConfigured = isFirebaseConfigured();
   const useFirestore = isFirestoreAvailable();
-  const googlePlacesConfigured = isGooglePlacesApiConfigured();
+  const googlePlacesConfigured = isGooglePlacesEnabled() || isGooglePlacesApiConfigured();
 
   let place: GooglePlaceRawDocument | null;
 

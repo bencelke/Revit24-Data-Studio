@@ -93,6 +93,10 @@ export const mockPlacesSearchJobsStore = {
       totalResults: input.totalResults ?? 0,
       importedResults: input.importedResults ?? 0,
       failedResults: input.failedResults ?? 0,
+      scheduledAt: input.scheduledAt ?? null,
+      clonedFromJobId: input.clonedFromJobId ?? null,
+      searchType: input.searchType ?? null,
+      errorMessage: input.errorMessage ?? null,
     };
     mockSearchJobs.set(id, job);
     return job;

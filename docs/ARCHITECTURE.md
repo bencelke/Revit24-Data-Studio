@@ -435,9 +435,32 @@ Implementation: `GooglePlacesDiscoveryProvider` in `googlePlacesService.ts`. Use
 
 ### Configuration
 
-`lib/config/google-places.ts` — `GOOGLE_PLACES_API_KEY`, default radius, result limit, language.
+`lib/config/google-places.ts` — `GOOGLE_PLACES_API_KEY`, `ENABLE_GOOGLE_PLACES`, default radius, result limit, language, retry/timeout. See `docs/GOOGLE_PLACES_PROVIDER.md` for Phase 17 production setup.
 
-## Phase 11 — Website Discovery & Public Metadata Import
+## Phase 17 — Production Google Places Provider
+
+Phase 10 discovery UI is extended with a **production API client** using official Google Places endpoints (Text Search, Nearby Search, Place Details, photo metadata only).
+
+### Services
+
+| Service | Role |
+|---------|------|
+| `googlePlacesProvider.ts` | Official API client with pagination, retry, timeout, error mapping |
+| `googlePlacesSearchService.ts` | Search orchestration: execute, rerun, clone, schedule |
+| `googlePlacesNormalizationService.ts` | Re-exports existing `placesNormalizationService` |
+
+### Components (`components/google/`)
+
+`GoogleSearchForm`, `GoogleResultsTable`, `BusinessPreviewCard`, `PlaceDetailsCard`, `GoogleSummaryCards`, `GooglePlacesJobsClient`
+
+### Search history API
+
+- `POST /api/google-places/search/[jobId]/rerun`
+- `POST /api/google-places/search/[jobId]/clone`
+- `POST /api/google-places/search/schedule`
+
+Jobs support `scheduledAt`, `clonedFromJobId`, `searchType`, and `errorMessage` fields.
+
 
 Collectors discover and import publicly available website metadata — titles, contact details, social links, and business information. No authentication bypass. Respects robots.txt when configured. Results flow into the existing review and normalization pipeline.
 

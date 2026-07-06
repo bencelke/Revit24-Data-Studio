@@ -2,9 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { PlacesResultsTable } from "./PlacesResultsTable";
+import { GoogleResultsTable, BusinessPreviewCard } from "@/components/google";
 import { ImportSelectionBar } from "./ImportSelectionBar";
-import { BusinessCard } from "./BusinessCard";
 import type { GooglePlaceRawDocument, PlacesSearchJobDocument } from "@/lib/types/google-places";
 
 interface GooglePlacesResultsClientProps {
@@ -61,7 +60,7 @@ export function GooglePlacesResultsClient({ job, places }: GooglePlacesResultsCl
       </div>
 
       {view === "table" ? (
-        <PlacesResultsTable
+        <GoogleResultsTable
           places={places}
           selectedIds={selectedIds}
           onSelectionChange={setSelectedIds}
@@ -69,7 +68,7 @@ export function GooglePlacesResultsClient({ job, places }: GooglePlacesResultsCl
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {places.map((place) => (
-            <BusinessCard
+            <BusinessPreviewCard
               key={place.id}
               place={place}
               selected={selectedIds.has(place.id)}

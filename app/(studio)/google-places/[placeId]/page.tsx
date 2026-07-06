@@ -3,7 +3,8 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { AppShell } from "@/components/layout";
-import { GooglePlacesPageNav, BusinessDetailsCard } from "@/components/google-places";
+import { GooglePlacesPageNav } from "@/components/google-places";
+import { PlaceDetailsCard } from "@/components/google";
 import { Button } from "@/components/ui/button";
 import { getPlaceDetailPageData } from "@/lib/services/placesSearchService";
 
@@ -38,7 +39,7 @@ export default async function GooglePlaceDetailPage({ params }: PlaceDetailPageP
           <ArrowLeft className="mr-2 size-4" />
           Back to results
         </Button>
-        <BusinessDetailsCard place={data.place} duplicates={data.duplicates} />
+        <PlaceDetailsCard place={data.place} duplicates={data.duplicates} />
       </div>
     </AppShell>
   );

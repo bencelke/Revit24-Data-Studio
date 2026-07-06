@@ -1,3 +1,30 @@
+export const GOOGLE_PLACES_SEARCH_TYPES = [
+  "text",
+  "nearby",
+  "keyword",
+  "category",
+] as const;
+
+export type GooglePlacesSearchType = (typeof GOOGLE_PLACES_SEARCH_TYPES)[number];
+
+export const GOOGLE_PLACES_ERROR_CODES = [
+  "INVALID_API_KEY",
+  "QUOTA_EXCEEDED",
+  "NETWORK_FAILURE",
+  "NO_RESULTS",
+  "RATE_LIMITED",
+  "TIMEOUT",
+  "UNKNOWN",
+] as const;
+
+export type GooglePlacesErrorCode = (typeof GOOGLE_PLACES_ERROR_CODES)[number];
+
+export interface GooglePlacesApiError {
+  code: GooglePlacesErrorCode;
+  message: string;
+  retryable: boolean;
+}
+
 export const GOOGLE_PLACES_BUSINESS_CATEGORIES = [
   "Performance Shop",
   "Tuning Shop",
@@ -57,6 +84,9 @@ export interface PlacesSearchQuery {
   radius: number;
   language?: string;
   resultLimit?: number;
+  latitude?: number | null;
+  longitude?: number | null;
+  searchType?: GooglePlacesSearchType;
 }
 
 export interface SavedSearchDocument {
@@ -85,6 +115,10 @@ export interface PlacesSearchJobDocument {
   totalResults: number;
   importedResults: number;
   failedResults: number;
+  scheduledAt: string | null;
+  clonedFromJobId: string | null;
+  searchType: GooglePlacesSearchType | null;
+  errorMessage: string | null;
 }
 
 export type CreatePlacesSearchJobInput = Omit<
@@ -117,6 +151,7 @@ export interface GooglePlaceRawDocument {
   googleMapsUrl: string;
   openingHours: string[];
   photos: string[];
+  businessStatus: string | null;
   status: GooglePlaceStatus;
   source: "google_places";
   searchJobId: string | null;

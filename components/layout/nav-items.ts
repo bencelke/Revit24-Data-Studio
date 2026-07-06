@@ -10,6 +10,7 @@ import {
   Settings,
   Workflow,
   Compass,
+  AtSign,
 } from "lucide-react";
 import type { NavItem } from "@/lib/types";
 
@@ -19,6 +20,12 @@ export const mainNavItems: NavItem[] = [
     href: "/dashboard",
     icon: LayoutDashboard,
     description: "Overview and activity",
+  },
+  {
+    title: "Instagram Import",
+    href: "/instagram-import",
+    icon: AtSign,
+    description: "Paste profiles and extract public metadata",
   },
   {
     title: "Imports",

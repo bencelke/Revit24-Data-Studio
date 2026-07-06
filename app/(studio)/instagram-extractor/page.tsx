@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { AppShell } from "@/components/layout";
-import { InstagramExtractorClient } from "@/components/instagram-extractor";
+import { InstagramExtractorClient } from "@/components/instagram-extractor/InstagramExtractorClient";
 import { getExtractorPageData } from "@/lib/services/instagramPublicExtractorService";
 
 export const metadata: Metadata = {

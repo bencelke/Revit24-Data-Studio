@@ -12,7 +12,9 @@ import {
   listExtractionResults,
   deleteExtractionResult,
   clearExtractionResults,
-  findByUsername,
+} from "@/lib/repositories/instagramExtractionStorage";
+import {
+  findByUsername as findFirestoreByUsername,
 } from "@/lib/repositories/instagramExtractionsRepository";
 import { parseInstagramInput } from "@/lib/validation/instagramInput";
 import type {
@@ -91,7 +93,9 @@ export async function extractAndUpsertSingleProfile(input: {
     extractedAt,
   });
 
-  const existing = await findByUsername(createInput.username);
+  const existing = isFirestoreAvailable()
+    ? await findFirestoreByUsername(createInput.username)
+    : null;
   if (existing) {
     createInput.createdAt = existing.createdAt;
   }
@@ -173,7 +177,6 @@ export async function runInstagramExtractionFromText(
 
 export {
   listExtractionResults,
-  findByUsername,
   deleteExtractionResult,
   clearExtractionResults,
 };

@@ -8,6 +8,11 @@ import { InstagramExtractionProgressPanel } from "./InstagramExtractionProgressP
 import { FirestoreStatusBanner } from "@/components/imports/DataModeBadge";
 import { Button } from "@/components/ui/button";
 import { parseInstagramInput } from "@/lib/validation/instagramInput";
+import {
+  listExtractionResultsSync,
+  saveExtractionResults,
+  usesLocalStorage,
+} from "@/lib/repositories/instagramExtractionStorage";
 import { MOCK_MODE_WARNING, getErrorMessage } from "@/lib/errors/app-errors";
 import type {
   ExtractedInstagramProfile,
@@ -69,19 +74,28 @@ export function InstagramExtractorClient({
     setProgress(EMPTY_PROGRESS);
   }
 
+  function resolveProfiles(): { username: string; profileUrl: string }[] {
+    if (validProfiles.length > 0) {
+      return validProfiles;
+    }
+
+    const parsed = parseInstagramInput(input);
+    setSummary(parsed.summary);
+    const profiles = parsed.rows
+      .filter((row) => row.validationStatus === "valid" && row.username && row.profileUrl)
+      .map((row) => ({
+        username: row.username as string,
+        profileUrl: row.profileUrl as string,
+      }));
+    setValidProfiles(profiles);
+    return profiles;
+  }
+
   async function handleExtract() {
-    const profiles =
-      validProfiles.length > 0
-        ? validProfiles
-        : parseInstagramInput(input)
-            .rows.filter((row) => row.validationStatus === "valid" && row.username && row.profileUrl)
-            .map((row) => ({
-              username: row.username as string,
-              profileUrl: row.profileUrl as string,
-            }));
+    const profiles = resolveProfiles();
 
     if (profiles.length === 0) {
-      setError("No valid profiles to extract. Preview links first.");
+      setError("No valid profiles to extract. Check your input.");
       return;
     }
 
@@ -128,16 +142,26 @@ export function InstagramExtractorClient({
           continue;
         }
 
+        if (usesLocalStorage()) {
+          const hadExisting = listExtractionResultsSync().some(
+            (row) => row.username.toLowerCase() === payload.record!.username.toLowerCase(),
+          );
+          saveExtractionResults([payload.record]);
+          if (hadExisting) {
+            updated += 1;
+          } else {
+            saved += 1;
+          }
+        } else if (payload.updated) {
+          updated += 1;
+        } else {
+          saved += 1;
+        }
+
         if (payload.record.status === "completed" || payload.record.status === "mock") {
           succeeded += 1;
         } else {
           failed += 1;
-        }
-
-        if (payload.updated) {
-          updated += 1;
-        } else {
-          saved += 1;
         }
 
         setProgress({

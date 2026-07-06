@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,6 +8,13 @@ import { FirestoreStatusBanner } from "@/components/imports/DataModeBadge";
 import { InstagramResultsTable } from "./InstagramResultsTable";
 import { ResultsActions } from "./ResultsActions";
 import { buildInstagramExtractionCsv, downloadCsv } from "@/lib/utils/csvExport";
+import {
+  clearExtractionResults,
+  deleteExtractionResult,
+  listExtractionResults,
+  listExtractionResultsSync,
+  usesLocalStorage,
+} from "@/lib/repositories/instagramExtractionStorage";
 import { MOCK_MODE_WARNING, getErrorMessage } from "@/lib/errors/app-errors";
 import type { ExtractedInstagramProfile, ExtractorPageData } from "@/lib/types/instagramExtraction";
 
@@ -21,9 +28,19 @@ export function ResultsClient({
   extractorMode,
   initialResults,
 }: ResultsClientProps) {
-  const [rows, setRows] = useState<ExtractedInstagramProfile[]>(initialResults);
+  const [rows, setRows] = useState<ExtractedInstagramProfile[]>(() =>
+    usesLocalStorage() ? listExtractionResultsSync() : initialResults,
+  );
   const [isClearing, setIsClearing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!usesLocalStorage()) {
+      return;
+    }
+
+    void listExtractionResults().then(setRows);
+  }, []);
 
   function handleExportCsv() {
     if (rows.length === 0) return;
@@ -36,6 +53,12 @@ export function ResultsClient({
     setError(null);
 
     try {
+      if (usesLocalStorage()) {
+        await clearExtractionResults();
+        setRows([]);
+        return;
+      }
+
       const response = await fetch("/api/instagram-extractor/results/clear", {
         method: "DELETE",
       });
@@ -57,6 +80,15 @@ export function ResultsClient({
     setError(null);
 
     try {
+      if (usesLocalStorage()) {
+        const deleted = await deleteExtractionResult(id);
+        if (!deleted) {
+          throw new Error("Result not found.");
+        }
+        setRows((current) => current.filter((row) => row.id !== id));
+        return;
+      }
+
       const response = await fetch(`/api/instagram-extractor/results/${id}`, {
         method: "DELETE",
       });
@@ -92,7 +124,7 @@ export function ResultsClient({
         <FirestoreStatusBanner
           variant="warning"
           title="Mock Mode"
-          description={MOCK_MODE_WARNING}
+          description={`${MOCK_MODE_WARNING} Results are stored in browser localStorage.`}
         />
       ) : (
         <FirestoreStatusBanner

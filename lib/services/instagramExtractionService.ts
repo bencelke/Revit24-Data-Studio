@@ -518,7 +518,6 @@ export {
   runInstagramExtractionFromText,
   extractAndUpsertSingleProfile,
   listExtractionResults,
-  findByUsername,
   deleteExtractionResult,
   clearExtractionResults,
   getExtractorPageData,

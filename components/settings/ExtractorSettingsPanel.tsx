@@ -16,14 +16,14 @@ function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between gap-4 border-b border-border py-3 text-sm last:border-0">
       <span className="text-muted-foreground">{label}</span>
-      <span className="font-medium">{value}</span>
+      <span className="max-w-[60%] text-right font-medium break-all">{value}</span>
     </div>
   );
 }
 
 export function ExtractorSettingsPanel({ settings }: ExtractorSettingsPanelProps) {
   const storageLabel =
-    settings.storageMode === "live" ? "Firebase Live Mode" : "Local Mock Mode";
+    settings.storageMode === "live" ? "Firebase Live Mode" : "Mock localStorage";
 
   return (
     <div className="grid gap-6 lg:grid-cols-2">
@@ -33,11 +33,19 @@ export function ExtractorSettingsPanel({ settings }: ExtractorSettingsPanelProps
           <CardDescription>Shared Revit24.com project connection</CardDescription>
         </CardHeader>
         <CardContent className="space-y-0">
-          <Row label="Firebase Status" value={settings.firebaseStatus} />
-          <Row label="Project ID" value={settings.firebaseProjectId ?? "Not configured"} />
-          <Row label="Storage Mode" value={storageLabel} />
+          <Row label="Firebase" value={settings.firebaseStatus} />
+          <Row label="Project ID" value={settings.firebaseProjectId ?? "missing"} />
+          <Row label="Storage mode" value={storageLabel} />
           <Row label="Import Queue" value={settings.importQueueCollection} />
           <Row label="Deployment" value={settings.deployment} />
+          {settings.missingFirebaseEnvVars.length > 0 ? (
+            <div className="border-b border-border py-3 text-sm last:border-0">
+              <p className="text-muted-foreground">Missing env vars</p>
+              <p className="mt-1 font-mono text-xs text-muted-foreground">
+                {settings.missingFirebaseEnvVars.join(", ")}
+              </p>
+            </div>
+          ) : null}
           <div className="pt-4">
             <Badge variant={settings.firebaseConnected ? "default" : "outline"}>
               {settings.firebaseConnected ? "Connected" : settings.firebaseStatus}
@@ -48,20 +56,20 @@ export function ExtractorSettingsPanel({ settings }: ExtractorSettingsPanelProps
 
       <Card className="border-border bg-card shadow-none">
         <CardHeader>
-          <CardTitle className="text-base font-semibold">Extraction</CardTitle>
+          <CardTitle className="text-base font-semibold">Instagram extraction</CardTitle>
           <CardDescription>Public Instagram profile extractor</CardDescription>
         </CardHeader>
         <CardContent className="space-y-0">
           <Row
-            label="Live extraction"
+            label="Instagram extraction"
             value={settings.extractionEnabled ? "Enabled" : "Disabled"}
           />
-          <Row label="Current mode" value={settings.mode} />
+          <Row label="Extraction mode" value={settings.mode} />
           <Row label="Delay between profiles" value={`${settings.extractionDelayMs} ms`} />
           <Row label="Max retries" value={String(settings.extractionMaxRetries)} />
           <div className="pt-4">
             <Badge variant={settings.extractionEnabled ? "default" : "outline"}>
-              {settings.extractionEnabled ? "Real extractor" : "Mock extractor"}
+              {settings.extractionEnabled ? "Live extraction" : "Mock extraction"}
             </Badge>
           </div>
         </CardContent>
@@ -71,7 +79,7 @@ export function ExtractorSettingsPanel({ settings }: ExtractorSettingsPanelProps
         <CardHeader>
           <CardTitle className="text-base font-semibold">Vercel environment variables</CardTitle>
           <CardDescription>
-            Add these in the Vercel project settings for revit24-data-studio. Do not commit
+            Add these in Vercel → Settings → Environment Variables, then redeploy. Do not commit
             .env.local.
           </CardDescription>
         </CardHeader>
@@ -82,7 +90,8 @@ export function ExtractorSettingsPanel({ settings }: ExtractorSettingsPanelProps
           <p>NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET</p>
           <p>NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID</p>
           <p>NEXT_PUBLIC_FIREBASE_APP_ID</p>
-          <p className="mt-3">ENABLE_INSTAGRAM_EXTRACTION=false</p>
+          <p className="mt-3">ENABLE_INSTAGRAM_EXTRACTION=true</p>
+          <p>NEXT_PUBLIC_ENABLE_INSTAGRAM_EXTRACTION=true</p>
           <p>INSTAGRAM_EXTRACTION_DELAY_MS=5000</p>
           <p>INSTAGRAM_EXTRACTION_TIMEOUT_MS=30000</p>
           <p>INSTAGRAM_EXTRACTION_MAX_RETRIES=1</p>

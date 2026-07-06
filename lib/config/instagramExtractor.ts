@@ -9,9 +9,16 @@ function readNumber(value: string | undefined, defaultValue: number): number {
   return Number.isFinite(parsed) && parsed >= 0 ? parsed : defaultValue;
 }
 
+function isExtractionFlagEnabled(): boolean {
+  return (
+    readBoolean(process.env.ENABLE_INSTAGRAM_EXTRACTION, false) ||
+    readBoolean(process.env.NEXT_PUBLIC_ENABLE_INSTAGRAM_EXTRACTION, false)
+  );
+}
+
 export const INSTAGRAM_EXTRACTOR_CONFIG = {
-  /** Must be explicitly enabled. Defaults to false for safe rollout. */
-  enabled: readBoolean(process.env.ENABLE_INSTAGRAM_EXTRACTION, false),
+  /** Must be explicitly enabled via server or public env flag. Defaults to false. */
+  enabled: isExtractionFlagEnabled(),
 
   /** Delay between sequential profile extractions (ms). */
   delayMs: readNumber(process.env.INSTAGRAM_EXTRACTION_DELAY_MS, 5000),
@@ -31,6 +38,14 @@ export const INSTAGRAM_EXTRACTOR_CONFIG = {
 
 export function isInstagramExtractionEnabled(): boolean {
   return INSTAGRAM_EXTRACTOR_CONFIG.enabled && !INSTAGRAM_EXTRACTOR_CONFIG.forceMock;
+}
+
+/** Client-safe extraction flag (reads NEXT_PUBLIC_ENABLE_INSTAGRAM_EXTRACTION). */
+export function isInstagramExtractionEnabledOnClient(): boolean {
+  return (
+    readBoolean(process.env.NEXT_PUBLIC_ENABLE_INSTAGRAM_EXTRACTION, false) &&
+    process.env.INSTAGRAM_EXTRACTION_MODE !== "mock"
+  );
 }
 
 export function shouldUseInstagramMockExtraction(): boolean {

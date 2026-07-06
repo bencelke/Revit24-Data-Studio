@@ -75,8 +75,9 @@ export interface ExtractorPageData {
 
 export interface ExtractorSettingsData {
   firebaseConnected: boolean;
-  firebaseStatus: "Connected" | "Missing Config" | "Error";
+  firebaseStatus: "Connected" | "Missing" | "Error";
   firebaseProjectId: string | null;
+  missingFirebaseEnvVars: string[];
   storageMode: StorageMode;
   mode: "Live" | "Mock";
   extractionEnabled: boolean;

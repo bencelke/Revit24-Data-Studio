@@ -219,14 +219,15 @@ export function InstagramExtractorClient({
     <div className="space-y-6">
       <div className="flex flex-wrap items-center gap-3">
         <Badge variant={storageMode === "live" ? "default" : "outline"}>
-          {storageMode === "live" ? "Live Firestore" : "Mock storage"}
+          {storageMode === "live" ? "Firebase Live Mode" : "Mock localStorage"}
         </Badge>
         <Badge variant={extractorMode === "live" ? "default" : "outline"}>
           {extractorMode === "live" ? "Live extraction" : "Mock extraction"}
         </Badge>
         {!extractionEnabled ? (
           <span className="rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-xs font-medium text-amber-400">
-            Set ENABLE_INSTAGRAM_EXTRACTION=true for real public profile data
+            Set ENABLE_INSTAGRAM_EXTRACTION=true or NEXT_PUBLIC_ENABLE_INSTAGRAM_EXTRACTION=true in
+            Vercel, then redeploy
           </span>
         ) : null}
       </div>

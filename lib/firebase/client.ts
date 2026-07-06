@@ -6,6 +6,8 @@ export { getFirebaseApp } from "./app";
 export {
   getFirebaseConfig,
   isFirebaseConfigured,
+  getMissingFirebaseEnvVars,
+  FIREBASE_ENV_KEYS,
   FIRESTORE_COLLECTIONS,
   type FirebaseConfig,
   type FirestoreCollectionName,

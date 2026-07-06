@@ -194,7 +194,7 @@ export function ResultsClient({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
           <Badge variant={storageMode === "live" ? "default" : "outline"}>
-            {storageMode === "live" ? "Live Firestore" : "Mock storage"}
+            {storageMode === "live" ? "Firebase Live Mode" : "Mock localStorage"}
           </Badge>
           <Badge variant={extractorMode === "live" ? "default" : "outline"}>
             {extractorMode === "live" ? "Live extraction" : "Mock extraction"}

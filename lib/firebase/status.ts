@@ -1,5 +1,5 @@
 import { getFirebaseApp } from "./app";
-import { getFirebaseConfig, isFirebaseConfigured } from "./config";
+import { getFirebaseConfig, getMissingFirebaseEnvVars, isFirebaseConfigured } from "./config";
 
 export type FirebaseConnectionStatus = "connected" | "missing_config" | "error";
 
@@ -22,13 +22,28 @@ export function getFirebaseProjectId(): string | null {
 
 export function formatFirebaseStatusLabel(
   status: FirebaseConnectionStatus,
-): "Connected" | "Missing Config" | "Error" {
+): "Connected" | "Missing" | "Error" {
   switch (status) {
     case "connected":
       return "Connected";
     case "error":
       return "Error";
     default:
-      return "Missing Config";
+      return "Missing";
   }
+}
+
+export function getFirebaseDiagnostics(): {
+  status: FirebaseConnectionStatus;
+  statusLabel: "Connected" | "Missing" | "Error";
+  projectId: string | null;
+  missingEnvVars: string[];
+} {
+  const status = getFirebaseConnectionStatus();
+  return {
+    status,
+    statusLabel: formatFirebaseStatusLabel(status),
+    projectId: getFirebaseProjectId(),
+    missingEnvVars: getMissingFirebaseEnvVars(),
+  };
 }

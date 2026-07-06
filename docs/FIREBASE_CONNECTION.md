@@ -15,6 +15,18 @@ Copy the Firebase **Web App** config from the Revit24 Firebase console:
 | `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID` | Messaging sender ID |
 | `NEXT_PUBLIC_FIREBASE_APP_ID` | Firebase Web App ID |
 
+### Instagram extraction (Vercel)
+
+| Variable | Description |
+|----------|-------------|
+| `ENABLE_INSTAGRAM_EXTRACTION` | Server-side flag for live extraction (`true`) |
+| `NEXT_PUBLIC_ENABLE_INSTAGRAM_EXTRACTION` | Client-visible flag for Settings UI (`true`) |
+| `INSTAGRAM_EXTRACTION_DELAY_MS` | Delay between profile requests (default `5000`) |
+| `INSTAGRAM_EXTRACTION_TIMEOUT_MS` | Per-request timeout (default `30000`) |
+| `INSTAGRAM_EXTRACTION_MAX_RETRIES` | Retries on retryable errors (default `1`) |
+
+Set **at least one** extraction flag to `true` for live mode. After changing env vars in Vercel, **redeploy** the project.
+
 ### Where to find values
 
 1. Open [Firebase Console](https://console.firebase.google.com/)
@@ -38,7 +50,7 @@ The app reports Firebase status in **Settings**:
 | Status | Meaning |
 |--------|---------|
 | **Connected** | All env vars present; Firestore client initialized |
-| **Missing Config** | One or more `NEXT_PUBLIC_FIREBASE_*` vars are empty |
+| **Missing** | One or more `NEXT_PUBLIC_FIREBASE_*` vars are empty |
 | **Error** | Config present but initialization failed |
 
 When Firebase is missing, Data Studio stays in **Local Mock Mode**:

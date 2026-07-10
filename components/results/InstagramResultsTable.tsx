@@ -42,7 +42,7 @@ function StatusBadge({ status }: { status: string }) {
     return <Badge variant="destructive">{status}</Badge>;
   }
 
-  if (status === "pending" || status === "running") {
+  if (status === "queued" || status === "pending" || status === "running") {
     return <Badge variant="outline">{status}</Badge>;
   }
 

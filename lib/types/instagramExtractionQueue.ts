@@ -1,4 +1,7 @@
+import type { InstagramEntityType } from "@/lib/types/instagramExtraction";
+
 export const EXTRACTION_QUEUE_STATUSES = [
+  "queued",
   "pending",
   "running",
   "success",
@@ -6,30 +9,37 @@ export const EXTRACTION_QUEUE_STATUSES = [
   "skipped",
 ] as const;
 
-import type { InstagramEntityType } from "@/lib/types/instagramExtraction";
-
 export type ExtractionQueueStatus = (typeof EXTRACTION_QUEUE_STATUSES)[number];
+
+export const INSTAGRAM_QUEUE_SOURCE = "revit24-data-studio" as const;
+export const INSTAGRAM_QUEUE_PLATFORM = "instagram" as const;
+
+export function buildInstagramQueueDocumentId(username: string): string {
+  return `instagram-profile-${username.toLowerCase()}`;
+}
 
 export interface InstagramExtractionQueueDocument {
   id: string;
+  source: typeof INSTAGRAM_QUEUE_SOURCE;
+  sourcePlatform: typeof INSTAGRAM_QUEUE_PLATFORM;
   username: string;
   profileUrl: string;
   status: ExtractionQueueStatus;
   createdAt: string;
   updatedAt: string;
-  startedAt: string | null;
-  completedAt: string | null;
+  startedAt: string;
+  completedAt: string;
   attempts: number;
-  errorCode: string | null;
-  errorMessage: string | null;
+  errorCode: string;
+  errorMessage: string;
 }
 
-export type CreateInstagramExtractionQueueInput = Omit<InstagramExtractionQueueDocument, "id">;
+export type CreateInstagramExtractionQueueInput = InstagramExtractionQueueDocument;
 
 export interface InstagramQueueJobSummary {
   queued: number;
   skipped: number;
-  storageMode: "live" | "mock";
+  storageMode: "firebase" | "mock";
 }
 
 export interface InstagramResultsSummary {
@@ -61,4 +71,10 @@ export interface InstagramResultsViewRow {
 export interface InstagramResultsView {
   summary: InstagramResultsSummary;
   rows: InstagramResultsViewRow[];
+}
+
+export const ACTIVE_QUEUE_STATUSES: ExtractionQueueStatus[] = ["queued", "pending", "running"];
+
+export function isActiveQueueStatus(status: ExtractionQueueStatus): boolean {
+  return ACTIVE_QUEUE_STATUSES.includes(status);
 }

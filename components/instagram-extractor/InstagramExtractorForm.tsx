@@ -15,6 +15,8 @@ interface InstagramExtractorFormProps {
   onClear: () => void;
   isQueueing?: boolean;
   canCreateJob?: boolean;
+  successMessage?: string | null;
+  errorMessage?: string | null;
 }
 
 export function InstagramExtractorForm({
@@ -25,6 +27,8 @@ export function InstagramExtractorForm({
   onClear,
   isQueueing,
   canCreateJob,
+  successMessage,
+  errorMessage,
 }: InstagramExtractorFormProps) {
   return (
     <div className="space-y-4 rounded-lg border border-border bg-card p-4">
@@ -55,6 +59,14 @@ export function InstagramExtractorForm({
           Clear
         </Button>
       </div>
+
+      {successMessage ? (
+        <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300">{successMessage}</p>
+      ) : null}
+
+      {errorMessage ? (
+        <p className="text-sm text-destructive">{errorMessage}</p>
+      ) : null}
     </div>
   );
 }

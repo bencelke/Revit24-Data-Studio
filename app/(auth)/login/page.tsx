@@ -1,10 +1,19 @@
 import type { Metadata } from "next";
-import { LoginFormPlaceholder } from "@/components/auth/login-form-placeholder";
+import { LoginForm } from "@/components/auth/LoginForm";
+import { getFirebaseEnvStatus } from "@/lib/firebase/firebaseEnv";
 
 export const metadata: Metadata = {
   title: "Sign In",
 };
 
+export const dynamic = "force-dynamic";
+
 export default function LoginPage() {
-  return <LoginFormPlaceholder />;
+  const envStatus = getFirebaseEnvStatus();
+
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+      <LoginForm initialEnvStatus={envStatus} />
+    </div>
+  );
 }

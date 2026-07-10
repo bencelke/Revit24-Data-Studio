@@ -287,8 +287,8 @@ export function ResultsClient({
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
-          <Badge variant={storageMode === "live" ? "default" : "outline"}>
-            {storageMode === "live" ? "Firebase Live Mode" : "Mock localStorage"}
+          <Badge variant={storageMode === "firebase" ? "default" : "outline"}>
+            {storageMode === "firebase" ? "Firebase Connected" : "Mock localStorage"}
           </Badge>
           <Badge variant="outline">Local worker extraction</Badge>
           {queueSummary.pending > 0 ? (

@@ -1,3 +1,12 @@
+import type { FirebaseClientConfig } from "./firebaseEnv";
+import {
+  FIREBASE_ENV_KEYS,
+  getFirebaseClientConfig,
+  getMissingFirebaseEnvKeys,
+  isFirebaseEnvConfigured,
+  type FirebaseEnvKey,
+} from "./firebaseEnv";
+
 export const FIRESTORE_COLLECTIONS = {
   imports: "imports",
   profiles: "profiles",
@@ -41,43 +50,24 @@ export const FIRESTORE_COLLECTIONS = {
 export type FirestoreCollectionName =
   (typeof FIRESTORE_COLLECTIONS)[keyof typeof FIRESTORE_COLLECTIONS];
 
-export interface FirebaseConfig {
-  apiKey: string;
-  authDomain: string;
-  projectId: string;
-  storageBucket: string;
-  messagingSenderId: string;
-  appId: string;
-}
+export type FirebaseConfig = FirebaseClientConfig;
 
-export const FIREBASE_ENV_KEYS = [
-  "NEXT_PUBLIC_FIREBASE_API_KEY",
-  "NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN",
-  "NEXT_PUBLIC_FIREBASE_PROJECT_ID",
-  "NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET",
-  "NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID",
-  "NEXT_PUBLIC_FIREBASE_APP_ID",
-] as const;
-
-function readEnv(key: string): string {
-  return (process.env[key] ?? "").trim();
-}
+export { FIREBASE_ENV_KEYS, type FirebaseEnvKey };
 
 export function getFirebaseConfig(): FirebaseConfig {
-  return {
-    apiKey: readEnv("NEXT_PUBLIC_FIREBASE_API_KEY"),
-    authDomain: readEnv("NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN"),
-    projectId: readEnv("NEXT_PUBLIC_FIREBASE_PROJECT_ID"),
-    storageBucket: readEnv("NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET"),
-    messagingSenderId: readEnv("NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID"),
-    appId: readEnv("NEXT_PUBLIC_FIREBASE_APP_ID"),
-  };
+  return getFirebaseClientConfig();
 }
 
 export function getMissingFirebaseEnvVars(): string[] {
-  return FIREBASE_ENV_KEYS.filter((key) => readEnv(key).length === 0);
+  return getMissingFirebaseEnvKeys();
 }
 
 export function isFirebaseConfigured(): boolean {
-  return getMissingFirebaseEnvVars().length === 0;
+  return isFirebaseEnvConfigured();
 }
+
+export {
+  getFirebaseClientConfig,
+  getFirebaseEnvStatus,
+  type FirebaseEnvStatus,
+} from "./firebaseEnv";

@@ -8,7 +8,8 @@ import {
   getInstagramWorkerDelayMs,
   getInstagramWorkerMaxRetries,
 } from "@/lib/config/instagramWorker";
-import { isFirebaseConfigured, FIRESTORE_COLLECTIONS } from "@/lib/firebase/config";
+import { FIRESTORE_COLLECTIONS } from "@/lib/firebase/config";
+import { isFirebaseEnvConfigured, getFirebaseEnvStatus } from "@/lib/firebase/firebaseEnv";
 import { getFirebaseDiagnostics } from "@/lib/firebase/status";
 import { instagramPublicProfileProvider } from "@/lib/providers/instagram";
 import { isFirestoreAvailable } from "@/lib/repositories/firestore-client";
@@ -45,7 +46,7 @@ function sleep(ms: number): Promise<void> {
 }
 
 function getStorageMode(): StorageMode {
-  return isFirestoreAvailable() ? "live" : "mock";
+  return isFirebaseEnvConfigured() ? "firebase" : "mock";
 }
 
 function mapProviderStatus(success: boolean, mock: boolean): ExtractionStatus {
@@ -296,10 +297,14 @@ export {
 };
 
 export async function getExtractorPageData(): Promise<ExtractorPageData> {
-  const firebaseConnected = isFirebaseConfigured();
+  const firebase = getFirebaseDiagnostics();
+  const firebaseConnected = firebase.status === "connected";
+
   return {
     firebaseConnected,
     storageMode: getStorageMode(),
+    firebaseProjectId: firebase.projectId,
+    queueCollection: FIRESTORE_COLLECTIONS.instagram_extraction_queue,
     extractorMode: shouldUseInstagramMockExtraction() ? "mock" : "live",
     extractionEnabled: isInstagramExtractionEnabled(),
     extractionDelayMs: INSTAGRAM_EXTRACTOR_CONFIG.delayMs,
@@ -308,6 +313,7 @@ export async function getExtractorPageData(): Promise<ExtractorPageData> {
 
 export async function getExtractorSettingsData(): Promise<ExtractorSettingsData> {
   const firebase = getFirebaseDiagnostics();
+  const envStatus = getFirebaseEnvStatus();
   const firebaseConnected = firebase.status === "connected";
   const storageMode = getStorageMode();
   const extractionLive = isInstagramExtractionEnabled();
@@ -322,7 +328,8 @@ export async function getExtractorSettingsData(): Promise<ExtractorSettingsData>
         listExtractionResults(),
       ]);
       pendingQueueCount = queueItems.filter(
-        (item) => item.status === "pending" || item.status === "running",
+        (item) =>
+          item.status === "queued" || item.status === "pending" || item.status === "running",
       ).length;
       resultsCount = extractions.length;
     } catch {
@@ -335,6 +342,8 @@ export async function getExtractorSettingsData(): Promise<ExtractorSettingsData>
     firebaseConnected,
     firebaseStatus: firebase.statusLabel,
     firebaseProjectId: firebase.projectId,
+    firebaseAuthDomain: envStatus.authDomain || null,
+    firebaseEnvConfigured: envStatus.configured,
     missingFirebaseEnvVars: firebase.missingEnvVars,
     storageMode,
     mode: extractionLive ? "Live" : "Mock",

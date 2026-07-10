@@ -7,6 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "validate:firebase-env": "node scripts/validate-firebase-env.mjs",
+    "seed:instagram-queue": "node scripts/seed-instagram-queue.mjs",
     "worker": "node --experimental-strip-types workers/runtime/cli.ts",
     "worker:instagram": "tsx scripts/instagram-worker.ts"
   },

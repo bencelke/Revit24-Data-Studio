@@ -4,13 +4,13 @@ import {
   getDoc,
   getDocs,
   query,
+  setDoc,
   updateDoc,
   where,
-  writeBatch,
   type DocumentData,
 } from "firebase/firestore";
 import { FIRESTORE_COLLECTIONS } from "@/lib/firebase/config";
-import { isoToTimestamp, timestampToIso } from "@/lib/firebase/timestamps";
+import { timestampToIso } from "@/lib/firebase/timestamps";
 import { FirestoreNotConfiguredError } from "@/lib/errors/app-errors";
 import { mockInstagramExtractionQueueStore } from "@/lib/mock-data/instagramExtractionQueueStore";
 import { getFirestoreDb, isFirestoreAvailable } from "@/lib/repositories/firestore-client";
@@ -19,34 +19,44 @@ import type {
   ExtractionQueueStatus,
   InstagramExtractionQueueDocument,
 } from "@/lib/types/instagramExtractionQueue";
+import { isActiveQueueStatus } from "@/lib/types/instagramExtractionQueue";
 
-const BATCH_LIMIT = 499;
+const PENDING_QUEUE_STATUSES: ExtractionQueueStatus[] = ["queued", "pending"];
 
 function mapQueueDoc(id: string, data: DocumentData): InstagramExtractionQueueDocument {
   return {
-    id,
+    id: data.id != null ? String(data.id) : id,
+    source: "revit24-data-studio",
+    sourcePlatform: "instagram",
     username: String(data.username ?? ""),
     profileUrl: String(data.profileUrl ?? ""),
-    status: (data.status as ExtractionQueueStatus) ?? "pending",
+    status: (data.status as ExtractionQueueStatus) ?? "queued",
     createdAt: timestampToIso(data.createdAt),
     updatedAt: timestampToIso(data.updatedAt),
-    startedAt: data.startedAt != null ? timestampToIso(data.startedAt) : null,
-    completedAt: data.completedAt != null ? timestampToIso(data.completedAt) : null,
+    startedAt:
+      data.startedAt != null && data.startedAt !== "" ? timestampToIso(data.startedAt) : "",
+    completedAt:
+      data.completedAt != null && data.completedAt !== ""
+        ? timestampToIso(data.completedAt)
+        : "",
     attempts: Number(data.attempts ?? 0),
-    errorCode: data.errorCode != null ? String(data.errorCode) : null,
-    errorMessage: data.errorMessage != null ? String(data.errorMessage) : null,
+    errorCode: data.errorCode != null ? String(data.errorCode) : "",
+    errorMessage: data.errorMessage != null ? String(data.errorMessage) : "",
   };
 }
 
-function buildQueuePayload(input: CreateInstagramExtractionQueueInput) {
+function buildQueuePayload(input: CreateInstagramExtractionQueueInput): Record<string, unknown> {
   return {
+    id: input.id,
+    source: input.source,
+    sourcePlatform: input.sourcePlatform,
     username: input.username,
     profileUrl: input.profileUrl,
     status: input.status,
-    createdAt: isoToTimestamp(input.createdAt),
-    updatedAt: isoToTimestamp(input.updatedAt),
-    startedAt: input.startedAt ? isoToTimestamp(input.startedAt) : null,
-    completedAt: input.completedAt ? isoToTimestamp(input.completedAt) : null,
+    createdAt: input.createdAt,
+    updatedAt: input.updatedAt,
+    startedAt: input.startedAt,
+    completedAt: input.completedAt,
     attempts: input.attempts,
     errorCode: input.errorCode,
     errorMessage: input.errorMessage,
@@ -59,25 +69,11 @@ async function createQueueItemsBatchFirestore(
   const db = getFirestoreDb();
   const persisted: InstagramExtractionQueueDocument[] = [];
 
-  let batch = writeBatch(db);
-  let operationCount = 0;
-
   for (const input of inputs) {
-    if (operationCount >= BATCH_LIMIT) {
-      await batch.commit();
-      batch = writeBatch(db);
-      operationCount = 0;
-    }
-
-    const ref = doc(collection(db, FIRESTORE_COLLECTIONS.instagram_extraction_queue));
+    const ref = doc(db, FIRESTORE_COLLECTIONS.instagram_extraction_queue, input.id);
     const payload = buildQueuePayload(input);
-    batch.set(ref, payload);
-    persisted.push(mapQueueDoc(ref.id, payload));
-    operationCount += 1;
-  }
-
-  if (operationCount > 0) {
-    await batch.commit();
+    await setDoc(ref, payload, { merge: true });
+    persisted.push(mapQueueDoc(input.id, payload));
   }
 
   return persisted;
@@ -99,7 +95,7 @@ async function findPendingQueueItemsFirestore(
   const snapshot = await getDocs(
     query(
       collection(db, FIRESTORE_COLLECTIONS.instagram_extraction_queue),
-      where("status", "==", "pending"),
+      where("status", "in", PENDING_QUEUE_STATUSES),
     ),
   );
 
@@ -123,7 +119,7 @@ async function findPendingByUsernameFirestore(
 
   const active = snapshot.docs
     .map((record) => mapQueueDoc(record.id, record.data()))
-    .find((record) => record.status === "pending" || record.status === "running");
+    .find((record) => isActiveQueueStatus(record.status));
 
   return active ?? null;
 }
@@ -139,13 +135,9 @@ async function updateQueueItemFirestore(
   if (patch.username != null) updatePayload.username = patch.username;
   if (patch.profileUrl != null) updatePayload.profileUrl = patch.profileUrl;
   if (patch.status != null) updatePayload.status = patch.status;
-  if (patch.updatedAt != null) updatePayload.updatedAt = isoToTimestamp(patch.updatedAt);
-  if (patch.startedAt !== undefined) {
-    updatePayload.startedAt = patch.startedAt ? isoToTimestamp(patch.startedAt) : null;
-  }
-  if (patch.completedAt !== undefined) {
-    updatePayload.completedAt = patch.completedAt ? isoToTimestamp(patch.completedAt) : null;
-  }
+  if (patch.updatedAt != null) updatePayload.updatedAt = patch.updatedAt;
+  if (patch.startedAt !== undefined) updatePayload.startedAt = patch.startedAt;
+  if (patch.completedAt !== undefined) updatePayload.completedAt = patch.completedAt;
   if (patch.attempts != null) updatePayload.attempts = patch.attempts;
   if (patch.errorCode !== undefined) updatePayload.errorCode = patch.errorCode;
   if (patch.errorMessage !== undefined) updatePayload.errorMessage = patch.errorMessage;
@@ -182,10 +174,11 @@ export async function createQueueItemsBatch(
     return [];
   }
 
-  return withFirestoreFallback(
-    () => createQueueItemsBatchFirestore(inputs),
-    () => mockInstagramExtractionQueueStore.createBatch(inputs),
-  );
+  if (!isFirestoreAvailable()) {
+    throw new FirestoreNotConfiguredError();
+  }
+
+  return createQueueItemsBatchFirestore(inputs);
 }
 
 export async function listQueueItems(): Promise<InstagramExtractionQueueDocument[]> {
@@ -211,7 +204,7 @@ export async function findActiveQueueItemByUsername(
     () => findPendingByUsernameFirestore(username),
     () => {
       const existing = mockInstagramExtractionQueueStore.findByUsername(username);
-      if (!existing || (existing.status !== "pending" && existing.status !== "running")) {
+      if (!existing || !isActiveQueueStatus(existing.status)) {
         return null;
       }
       return existing;

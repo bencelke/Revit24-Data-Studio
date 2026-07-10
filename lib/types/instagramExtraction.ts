@@ -7,7 +7,7 @@ export const UPLOAD_STATUSES = ["not_uploaded", "uploaded", "duplicate", "failed
 export type UploadStatus = (typeof UPLOAD_STATUSES)[number];
 
 export type ExtractorMode = "live" | "mock";
-export type StorageMode = "live" | "mock";
+export type StorageMode = "firebase" | "mock";
 
 export const INSTAGRAM_ENTITY_TYPES = ["club", "member", "unknown"] as const;
 export type InstagramEntityType = (typeof INSTAGRAM_ENTITY_TYPES)[number];
@@ -110,6 +110,8 @@ export interface InstagramExtractionProgress {
 export interface ExtractorPageData {
   firebaseConnected: boolean;
   storageMode: StorageMode;
+  firebaseProjectId: string | null;
+  queueCollection: string;
   extractorMode: ExtractorMode;
   extractionEnabled: boolean;
   extractionDelayMs: number;
@@ -119,6 +121,8 @@ export interface ExtractorSettingsData {
   firebaseConnected: boolean;
   firebaseStatus: "Connected" | "Missing" | "Error";
   firebaseProjectId: string | null;
+  firebaseAuthDomain: string | null;
+  firebaseEnvConfigured: boolean;
   missingFirebaseEnvVars: string[];
   storageMode: StorageMode;
   mode: "Live" | "Mock";

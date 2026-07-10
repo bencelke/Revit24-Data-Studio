@@ -79,8 +79,8 @@ async function markQueueSuccess(item: InstagramExtractionQueueDocument): Promise
     status: "success",
     completedAt: timestamp,
     updatedAt: timestamp,
-    errorCode: null,
-    errorMessage: null,
+    errorCode: "",
+    errorMessage: "",
   });
 }
 

@@ -23,7 +23,7 @@ function Row({ label, value }: { label: string; value: string }) {
 
 export function ExtractorSettingsPanel({ settings }: ExtractorSettingsPanelProps) {
   const storageLabel =
-    settings.storageMode === "live" ? "Firebase Live Mode" : "Mock localStorage";
+    settings.storageMode === "firebase" ? "Firebase Connected" : "Mock localStorage";
 
   return (
     <div className="grid gap-6 lg:grid-cols-2">
@@ -35,6 +35,8 @@ export function ExtractorSettingsPanel({ settings }: ExtractorSettingsPanelProps
         <CardContent className="space-y-0">
           <Row label="Firebase" value={settings.firebaseStatus} />
           <Row label="Project ID" value={settings.firebaseProjectId ?? "missing"} />
+          <Row label="Auth domain" value={settings.firebaseAuthDomain ?? "missing"} />
+          <Row label="Env configured" value={settings.firebaseEnvConfigured ? "true" : "false"} />
           <Row label="Storage mode" value={storageLabel} />
           <Row label="Import Queue" value={settings.importQueueCollection} />
           <Row label="Deployment" value={settings.deployment} />

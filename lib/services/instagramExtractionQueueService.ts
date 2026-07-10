@@ -1,4 +1,4 @@
-import { isFirestoreAvailable } from "@/lib/repositories/firestore-client";
+import { isFirebaseEnvConfigured } from "@/lib/firebase/firebaseEnv";
 import {
   createQueueItemsBatch,
   findActiveQueueItemByUsername,
@@ -15,6 +15,12 @@ import type {
   InstagramResultsView,
   InstagramResultsViewRow,
 } from "@/lib/types/instagramExtractionQueue";
+import {
+  buildInstagramQueueDocumentId,
+  INSTAGRAM_QUEUE_PLATFORM,
+  INSTAGRAM_QUEUE_SOURCE,
+  isActiveQueueStatus,
+} from "@/lib/types/instagramExtractionQueue";
 
 function nowIso(): string {
   return new Date().toISOString();
@@ -24,25 +30,30 @@ function buildQueueInput(profile: {
   username: string;
   profileUrl: string;
 }): CreateInstagramExtractionQueueInput {
+  const username = profile.username.toLowerCase();
   const timestamp = nowIso();
+
   return {
-    username: profile.username.toLowerCase(),
+    id: buildInstagramQueueDocumentId(username),
+    source: INSTAGRAM_QUEUE_SOURCE,
+    sourcePlatform: INSTAGRAM_QUEUE_PLATFORM,
+    username,
     profileUrl: profile.profileUrl,
-    status: "pending",
+    status: "queued",
     createdAt: timestamp,
     updatedAt: timestamp,
-    startedAt: null,
-    completedAt: null,
+    startedAt: "",
+    completedAt: "",
     attempts: 0,
-    errorCode: null,
-    errorMessage: null,
+    errorCode: "",
+    errorMessage: "",
   };
 }
 
 export async function enqueueInstagramProfiles(
   profiles: { username: string; profileUrl: string }[],
 ): Promise<{ records: InstagramExtractionQueueDocument[]; summary: InstagramQueueJobSummary }> {
-  const storageMode = isFirestoreAvailable() ? "live" : "mock";
+  const storageMode = isFirebaseEnvConfigured() ? "firebase" : "mock";
   const toCreate: CreateInstagramExtractionQueueInput[] = [];
   let skipped = 0;
 
@@ -83,7 +94,7 @@ function buildResultsSummary(rows: InstagramResultsViewRow[]): InstagramResultsS
   };
 
   for (const row of rows) {
-    if (row.status === "pending") {
+    if (row.status === "queued" || row.status === "pending") {
       summary.pending += 1;
     } else if (row.status === "running") {
       summary.running += 1;
@@ -151,9 +162,9 @@ function mergeResultsView(
         extraction ? mapExtractionStatus(extraction.status) : item.status,
       ),
       status: extraction ? mapExtractionStatus(extraction.status) : item.status,
-      errorCode: item.errorCode ?? extraction?.errorCode ?? null,
-      errorMessage: item.errorMessage ?? extraction?.errorMessage ?? extraction?.error ?? null,
-      extractedAt: extraction?.extractedAt ?? item.completedAt ?? null,
+      errorCode: item.errorCode || extraction?.errorCode || null,
+      errorMessage: item.errorMessage || extraction?.errorMessage || extraction?.error || null,
+      extractedAt: extraction?.extractedAt || item.completedAt || null,
     });
   }
 
@@ -200,4 +211,4 @@ export async function getInstagramResultsView(): Promise<InstagramResultsView> {
   };
 }
 
-export { mergeResultsView, buildResultsSummary };
+export { mergeResultsView, buildResultsSummary, isActiveQueueStatus };

@@ -2,18 +2,14 @@ import type {
   CreateInstagramExtractionQueueInput,
   InstagramExtractionQueueDocument,
 } from "@/lib/types/instagramExtractionQueue";
+import { isActiveQueueStatus } from "@/lib/types/instagramExtractionQueue";
 
 const mockQueue = new Map<string, InstagramExtractionQueueDocument>();
 
-function generateId(): string {
-  return `ig_queue_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-}
-
 export const mockInstagramExtractionQueueStore = {
   create(input: CreateInstagramExtractionQueueInput): InstagramExtractionQueueDocument {
-    const id = generateId();
-    const record: InstagramExtractionQueueDocument = { ...input, id };
-    mockQueue.set(id, record);
+    const record: InstagramExtractionQueueDocument = { ...input };
+    mockQueue.set(record.id, record);
     return record;
   },
 
@@ -36,7 +32,7 @@ export const mockInstagramExtractionQueueStore = {
 
   findPending(): InstagramExtractionQueueDocument[] {
     return [...mockQueue.values()]
-      .filter((record) => record.status === "pending")
+      .filter((record) => record.status === "queued" || record.status === "pending")
       .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
   },
 
@@ -59,3 +55,5 @@ export const mockInstagramExtractionQueueStore = {
     return record;
   },
 };
+
+export { isActiveQueueStatus };

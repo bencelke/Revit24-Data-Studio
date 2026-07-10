@@ -4,15 +4,29 @@ import { useState } from "react";
 import Link from "next/link";
 import { InstagramExtractorForm } from "./InstagramExtractorForm";
 import { InstagramExtractorSummary } from "./InstagramExtractorSummary";
+import { InstagramExtractorStatusPanel } from "./InstagramExtractorStatusPanel";
 import { FirestoreStatusBanner } from "@/components/imports/DataModeBadge";
 import { Button } from "@/components/ui/button";
+import { useFirebaseAuth } from "@/components/providers/FirebaseAuthProvider";
 import { parseInstagramInput } from "@/lib/validation/instagramInput";
+import {
+  buildInstagramQueueDocumentId,
+  INSTAGRAM_QUEUE_PLATFORM,
+  INSTAGRAM_QUEUE_SOURCE,
+} from "@/lib/types/instagramExtractionQueue";
 import {
   createLocalQueueItems,
   saveQueueItems,
-  usesLocalQueueStorage,
 } from "@/lib/repositories/instagramExtractionQueueStorage";
-import { MOCK_MODE_WARNING, getErrorMessage } from "@/lib/errors/app-errors";
+import { enqueueInstagramProfiles } from "@/lib/services/instagramExtractionQueueService";
+import {
+  FirebaseAuthRequiredError,
+  FirebaseInitError,
+  FirebaseNotConfiguredError,
+  formatInstagramQueueSuccessMessage,
+  getInstagramQueueErrorMessage,
+  MOCK_MODE_WARNING,
+} from "@/lib/errors/app-errors";
 import type { ExtractorPageData, InstagramParseSummary } from "@/lib/types/instagramExtraction";
 import type { InstagramQueueJobSummary } from "@/lib/types/instagramExtractionQueue";
 import { Badge } from "@/components/ui/badge";
@@ -30,7 +44,9 @@ type InstagramExtractorClientProps = ExtractorPageData;
 export function InstagramExtractorClient({
   firebaseConnected,
   storageMode,
+  firebaseProjectId,
 }: InstagramExtractorClientProps) {
+  const { user, loading: authLoading, isClientReady, envStatus, initError } = useFirebaseAuth();
   const [input, setInput] = useState("");
   const [summary, setSummary] = useState<InstagramParseSummary>(EMPTY_SUMMARY);
   const [validProfiles, setValidProfiles] = useState<
@@ -38,7 +54,7 @@ export function InstagramExtractorClient({
   >([]);
   const [isQueueing, setIsQueueing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [queueSummary, setQueueSummary] = useState<InstagramQueueJobSummary | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   function handlePreview() {
     const parsed = parseInstagramInput(input);
@@ -52,7 +68,7 @@ export function InstagramExtractorClient({
         })),
     );
     setError(null);
-    setQueueSummary(null);
+    setSuccessMessage(null);
   }
 
   function resolveProfiles(): { username: string; profileUrl: string }[] {
@@ -82,23 +98,29 @@ export function InstagramExtractorClient({
 
     setIsQueueing(true);
     setError(null);
-    setQueueSummary(null);
+    setSuccessMessage(null);
 
     try {
-      if (usesLocalQueueStorage()) {
+      if (storageMode === "mock") {
         const timestamp = new Date().toISOString();
-        const inputs = profiles.map((profile) => ({
-          username: profile.username.toLowerCase(),
-          profileUrl: profile.profileUrl,
-          status: "pending" as const,
-          createdAt: timestamp,
-          updatedAt: timestamp,
-          startedAt: null,
-          completedAt: null,
-          attempts: 0,
-          errorCode: null,
-          errorMessage: null,
-        }));
+        const inputs = profiles.map((profile) => {
+          const username = profile.username.toLowerCase();
+          return {
+            id: buildInstagramQueueDocumentId(username),
+            source: INSTAGRAM_QUEUE_SOURCE,
+            sourcePlatform: INSTAGRAM_QUEUE_PLATFORM,
+            username,
+            profileUrl: profile.profileUrl,
+            status: "queued" as const,
+            createdAt: timestamp,
+            updatedAt: timestamp,
+            startedAt: "",
+            completedAt: "",
+            attempts: 0,
+            errorCode: "",
+            errorMessage: "",
+          };
+        });
         const records = createLocalQueueItems(inputs);
         saveQueueItems(records);
         const result: InstagramQueueJobSummary = {
@@ -106,30 +128,45 @@ export function InstagramExtractorClient({
           skipped: 0,
           storageMode: "mock",
         };
-        setQueueSummary(result);
+        setSuccessMessage(formatInstagramQueueSuccessMessage(result.queued, result.skipped));
         setSummary((current) => ({ ...current, queued: result.queued }));
         return;
       }
 
-      const response = await fetch("/api/instagram-extractor/queue", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ profiles }),
-      });
-
-      const payload = (await response.json()) as {
-        summary?: InstagramQueueJobSummary;
-        error?: string;
-      };
-
-      if (!response.ok || !payload.summary) {
-        throw new Error(payload.error ?? "Failed to create extraction job.");
+      if (!envStatus.configured) {
+        throw new FirebaseNotConfiguredError(envStatus.missingKeys);
       }
 
-      setQueueSummary(payload.summary);
-      setSummary((current) => ({ ...current, queued: payload.summary?.queued ?? 0 }));
+      if (initError) {
+        throw new FirebaseInitError(initError);
+      }
+
+      if (!isClientReady) {
+        throw new FirebaseInitError();
+      }
+
+      if (authLoading) {
+        setError("Checking Firebase sign-in status. Try again in a moment.");
+        return;
+      }
+
+      if (!user) {
+        throw new FirebaseAuthRequiredError();
+      }
+
+      const result = await enqueueInstagramProfiles(profiles);
+      const queuedCount = result.summary.queued;
+
+      setSuccessMessage(
+        formatInstagramQueueSuccessMessage(result.summary.queued, result.summary.skipped),
+      );
+
+      if (queuedCount > 0) {
+        setSummary((current) => ({ ...current, queued: queuedCount }));
+      }
     } catch (queueError) {
-      setError(getErrorMessage(queueError));
+      console.error("[instagram-extractor] Queue write failed:", queueError);
+      setError(getInstagramQueueErrorMessage(queueError));
     } finally {
       setIsQueueing(false);
     }
@@ -140,14 +177,19 @@ export function InstagramExtractorClient({
     setSummary(EMPTY_SUMMARY);
     setValidProfiles([]);
     setError(null);
-    setQueueSummary(null);
+    setSuccessMessage(null);
   }
 
   return (
     <div className="space-y-6">
+      <InstagramExtractorStatusPanel
+        storageMode={storageMode}
+        firebaseProjectId={firebaseProjectId}
+      />
+
       <div className="flex flex-wrap items-center gap-3">
-        <Badge variant={storageMode === "live" ? "default" : "outline"}>
-          {storageMode === "live" ? "Firebase Live Mode" : "Mock localStorage"}
+        <Badge variant={storageMode === "firebase" ? "default" : "outline"}>
+          {storageMode === "firebase" ? "Firebase Connected" : "Mock localStorage"}
         </Badge>
         <Badge variant="outline">Local worker extraction</Badge>
       </div>
@@ -164,7 +206,7 @@ export function InstagramExtractorClient({
           title="Firebase Connected"
           description={
             firebaseConnected
-              ? "Profiles are queued in instagram_extraction_queue. Run npm run worker:instagram on your Mac to process them."
+              ? "Profiles are queued in instagram_extraction_queue. Sign in with an approved email before creating jobs."
               : undefined
           }
         />
@@ -178,17 +220,18 @@ export function InstagramExtractorClient({
         onClear={handleClear}
         isQueueing={isQueueing}
         canCreateJob={input.trim().length > 0}
+        successMessage={successMessage}
+        errorMessage={error}
       />
 
       <InstagramExtractorSummary summary={summary} />
 
-      {queueSummary ? (
-        <div className="space-y-3 rounded-lg border border-border bg-card px-4 py-3">
+      {successMessage ? (
+        <div className="space-y-3 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-3">
+          <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300">
+            {successMessage}
+          </p>
           <p className="text-sm text-muted-foreground">
-            Queued {queueSummary.queued} profile{queueSummary.queued === 1 ? "" : "s"}.
-            {queueSummary.skipped > 0
-              ? ` ${queueSummary.skipped} already pending and skipped.`
-              : null}{" "}
             Run the local worker to process them.
           </p>
           <p className="font-mono text-xs text-muted-foreground">npm run worker:instagram</p>
@@ -201,6 +244,13 @@ export function InstagramExtractorClient({
       {error ? (
         <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
           {error}
+          {storageMode === "firebase" && !user && !authLoading ? (
+            <div className="mt-3">
+              <Button nativeButton={false} render={<Link href="/login" />} size="sm" variant="outline">
+                Sign in to Firebase
+              </Button>
+            </div>
+          ) : null}
         </div>
       ) : null}
     </div>
